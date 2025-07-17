@@ -1,0 +1,28 @@
+/* Tailwind users should include these */
+@import "tailwindcss";
+@import 'leaflet/dist/leaflet.css';
+
+/* Global CSS resets */
+* {
+  margin: 20;
+  padding: 20;
+  box-sizing: border-box;
+}
+
+/* Scrollbar handling + overflow fixes */
+html,
+body {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-family: system-ui, sans-serif;
+  background-color: #f3f4f6;
+  /* light gray */
+}
+
+/* React root container */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
