@@ -10,7 +10,7 @@ from datetime import timedelta
 from typing import Optional
 
 import llm
-from schemas import DayPlan, Plan, TripSpec
+from schemas import DayPlan, Plan, TraceStep, TripSpec
 from tools import resolve_city
 
 FOOD_PER_DAY = {"budget": 45, "mid": 70, "luxury": 120, "any": 70}
@@ -128,7 +128,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     return plan
 
 
-def summarize(spec: TripSpec, plan: Plan) -> str:
+def summarize(spec: TripSpec, plan: Plan, log=None) -> str:
     highlights = [it["name"] for d in plan.days for it in d.items][:5]
     fallback = (f"{spec.nights + 1}-day trip to {spec.destination} from {spec.start_date:%b %d}"
                 + (f", staying at {plan.hotel['name']}" if plan.hotel else "")
@@ -144,5 +144,8 @@ def summarize(spec: TripSpec, plan: Plan) -> str:
                 f"{d.date}: " + "; ".join(it["name"] for it in d.items) for d in plan.days)}],
             temperature=0.5, max_tokens=250)
         return (msg.content or fallback).strip()
-    except Exception:
+    except Exception as e:
+        if log:
+            log(TraceStep(agent="Composer", action="LLM summary failed, using template",
+                          detail=f"{type(e).__name__}: {e}"[:160]))
         return fallback

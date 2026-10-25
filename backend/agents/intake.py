@@ -27,8 +27,9 @@ NUM_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "se
 SYSTEM = """You are the Intake agent of a travel-planning system. Today is {today}.
 Extract the trip request into JSON with keys:
 origin (city, default "Boston" if not said), destination (city or null),
-start_date (YYYY-MM-DD or null; resolve relative dates like "next weekend" from today; never in the past),
-nights (int), travelers (int), budget_usd (number or null, total for the whole party),
+start_date (YYYY-MM-DD or null; resolve relative dates like "next weekend" from today; a weekend trip starts
+on the Friday; copy explicit dates exactly as written even if they are in the past, because the system validates them),
+nights (int; "N days" means N-1 nights, "a weekend" means 2 nights), travelers (int), budget_usd (number or null, total for the whole party),
 interests (list from: museum, art, history, food, nature, music, family, nightlife, science, shopping, architecture, outdoors, comedy),
 transport ("fly", "drive" or "local"), hotel_preference ("budget","mid","luxury","any").
 Only include keys the text actually supports; omit the rest. Do not invent a destination or date."""

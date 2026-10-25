@@ -28,6 +28,7 @@ import llm
 from agents import composer, critic, intake, research
 from agents.composer import Constraints
 from schemas import SessionState, TraceStep
+from tools import resolve_city
 
 MAX_REPAIRS = 4
 APPROVE_RE = re.compile(r"^\s*(approve|approved|looks good|lgtm|confirm|perfect)\b", re.I)
@@ -103,7 +104,7 @@ class Session:
             issues = critic.check(s.spec, plan, s.research)
         plan.revisions = repairs
         plan.issues = issues
-        plan.summary = composer.summarize(s.spec, plan)
+        plan.summary = composer.summarize(s.spec, plan, self.log)
         s.plan = plan
         s.status = "awaiting_approval"
         s.questions = self._escalations(issues)
@@ -165,6 +166,9 @@ class Session:
                     moves.append(f"remove {it['name']}")
         before = s.spec.model_dump()
         fields, method = intake.extract(message, self.today, feedback=True)
+        old, new = resolve_city(s.spec.destination or ""), resolve_city(fields.get("destination") or "")
+        if old and new and old["name"] == new["name"]:
+            fields.pop("destination")  # "New York" → "New York City" is not a change
         if "interests" in fields:
             fields["interests"] = sorted(set(s.spec.interests) | set(fields["interests"]))
         if re.search(r"\bi'?ll drive\b|\bdrive instead\b", t):

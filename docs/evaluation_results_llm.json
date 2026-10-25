@@ -1,0 +1,493 @@
+{
+ "mode": "llm",
+ "runs": 3,
+ "results": [
+  {
+   "id": "T1",
+   "category": "Functional / E2E",
+   "title": "Complete request \u2192 priced plan",
+   "expected": "Plan for 2 travelers, Nov 13\u201315, all 5 tools used, total \u2264 $1500, no questions.",
+   "actual": "status=awaiting_approval; total=$1,350; revisions=1",
+   "checks": [
+    [
+     "status awaiting approval",
+     true
+    ],
+    [
+     "2 travelers, 2 nights",
+     true
+    ],
+    [
+     "start date 2026-11-13",
+     true
+    ],
+    [
+     "all 5 tools called",
+     true
+    ],
+    [
+     "within budget",
+     true
+    ],
+    [
+     "museum interest used",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 7.98,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T2",
+   "category": "Human-in-the-loop",
+   "title": "Missing date \u2192 agent asks, then plans",
+   "expected": "Turn 1 asks for a date; turn 2 produces a plan starting Nov 20.",
+   "actual": "status=awaiting_approval; total=$1,749; revisions=0",
+   "checks": [
+    [
+     "asked for date first",
+     true
+    ],
+    [
+     "then planned",
+     true
+    ],
+    [
+     "date applied",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 8.75,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T3",
+   "category": "Human-in-the-loop",
+   "title": "Missing destination \u2192 asks",
+   "expected": "Asks where to go; does not invent a destination.",
+   "actual": "status=needs_clarification; asked: Where would you like to go?",
+   "checks": [
+    [
+     "asks where",
+     true
+    ],
+    [
+     "no plan invented",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 2.39,
+   "tools": []
+  },
+  {
+   "id": "T4",
+   "category": "Failure handling",
+   "title": "Unknown city \u2192 asks for clarification",
+   "expected": "Says it cannot find the city and asks which one is meant.",
+   "actual": "status=needs_clarification; asked: I couldn't find \"Atlantis\". Which city do you mean?",
+   "checks": [
+    [
+     "asks about the city",
+     true
+    ],
+    [
+     "no plan",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 2.23,
+   "tools": []
+  },
+  {
+   "id": "T5",
+   "category": "Failure handling",
+   "title": "Past date is rejected",
+   "expected": "Flags the date as in the past and asks again.",
+   "actual": "status=needs_clarification; asked: Mar 03, 2026 is in the past. What date did you mean?",
+   "checks": [
+    [
+     "flags past date",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 1.15,
+   "tools": []
+  },
+  {
+   "id": "T6",
+   "category": "Human-in-the-loop",
+   "title": "Infeasible budget \u2192 escalate, not fake it",
+   "expected": "Critic tries cheaper options, then asks the human (raise budget / shorten / drive).",
+   "actual": "status=awaiting_approval; total=$778; revisions=4; asked: The cheapest plan I can build is $778, $478 over your $300 budget. Would you like to raise the budget, shorten to 2 nights, or drive instead of flying?",
+   "checks": [
+    [
+     "\"4 days\" = 3 nights",
+     true
+    ],
+    [
+     "critic revised \u22652 times",
+     true
+    ],
+    [
+     "over-budget is reported, not hidden",
+     true
+    ],
+    [
+     "asks human with options",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 6.35,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T7",
+   "category": "Functional",
+   "title": "Driving \u2192 no flight search, driving costs",
+   "expected": "Flights tool not called; gas/parking appear in the cost breakdown.",
+   "actual": "status=awaiting_approval; total=$1,111; revisions=0",
+   "checks": [
+    [
+     "no flight tool",
+     true
+    ],
+    [
+     "gas & parking costed",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 5.89,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T8",
+   "category": "Functional",
+   "title": "Local day trip \u2192 no flight or hotel",
+   "expected": "Treated as local: no flight, no hotel; history sights first.",
+   "actual": "status=awaiting_approval; total=$127; revisions=0",
+   "checks": [
+    [
+     "local transport",
+     true
+    ],
+    [
+     "no flight/hotel tools",
+     true
+    ],
+    [
+     "history first",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 5.1,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events"
+   ]
+  },
+  {
+   "id": "T9",
+   "category": "Real-world adaptation",
+   "title": "Rainy day \u2192 indoor activities first",
+   "expected": "On days with \u226560% rain the first activity is indoors.",
+   "actual": "status=awaiting_approval; total=$1,093; revisions=0",
+   "checks": [
+    [
+     "rain rule respected",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 6.62,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T10",
+   "category": "Human-in-the-loop",
+   "title": "Feedback: \"cheaper\" really lowers price",
+   "expected": "Second plan total is strictly lower than the first.",
+   "actual": "status=awaiting_approval; total=$606; revisions=0",
+   "checks": [
+    [
+     "price dropped",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 10.72,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T11",
+   "category": "Human-in-the-loop",
+   "title": "Feedback: \"different hotel\"",
+   "expected": "Hotel changes; the rejected one is not re-proposed.",
+   "actual": "status=awaiting_approval; total=$969; revisions=0",
+   "checks": [
+    [
+     "hotel changed",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 12.27,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T12",
+   "category": "Human-in-the-loop",
+   "title": "Feedback: skip a specific place",
+   "expected": "Alcatraz removed from the itinerary.",
+   "actual": "status=awaiting_approval; total=$1,964; revisions=0",
+   "checks": [
+    [
+     "Alcatraz was in first plan",
+     true
+    ],
+    [
+     "Alcatraz removed",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 10.16,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T13",
+   "category": "Safety / oversight",
+   "title": "Nothing exported before approval",
+   "expected": "Status only becomes approved after explicit human approval.",
+   "actual": "status=approved; total=$1,080; revisions=0",
+   "checks": [
+    [
+     "awaiting before approval",
+     true
+    ],
+    [
+     "approved after",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 6.42,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T14",
+   "category": "Functional",
+   "title": "Group of 4 \u2192 2 rooms, per-person costs scale",
+   "expected": "Hotel cost = 2 rooms; family/science attractions prioritised.",
+   "actual": "status=awaiting_approval; total=$3,476; revisions=0",
+   "checks": [
+    [
+     "2 rooms priced",
+     true
+    ],
+    [
+     "family/science picks",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 6.34,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T15",
+   "category": "Failure handling",
+   "title": "Vague feedback \u2192 asks instead of guessing",
+   "expected": "No change to the plan; agent explains what it can change.",
+   "actual": "status=awaiting_approval; total=$1,050; revisions=0; asked: I wasn't sure what to change. Try e.g. \"cheaper\", \"different hotel\", \"skip Central Park\", \"budget is $900\", or \"approve\".",
+   "checks": [
+    [
+     "plan unchanged",
+     true
+    ],
+    [
+     "helpful question",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 7.48,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T16",
+   "category": "Human-in-the-loop",
+   "title": "Raise budget after escalation",
+   "expected": "After the human raises the budget, the plan fits and the question disappears.",
+   "actual": "status=awaiting_approval; total=$1,032; revisions=1",
+   "checks": [
+    [
+     "fits new budget",
+     true
+    ],
+    [
+     "no open question",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 9.12,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T17",
+   "category": "Known limitation",
+   "title": "City outside demo data (Paris)",
+   "expected": "Offline: cannot resolve the city and asks. Live: resolves via geocoding but has no airport code, so flights fail and the human is asked.",
+   "actual": "status=needs_clarification; asked: I couldn't find \"Paris\". Which city do you mean?",
+   "checks": [
+    [
+     "handled without crashing, human asked",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": true,
+   "seconds": 1.05,
+   "tools": []
+  },
+  {
+   "id": "T18",
+   "category": "Known limitation",
+   "title": "Complex date phrase",
+   "expected": "Rule parser can't resolve the phrase \u2192 asks for a date (LLM mode should resolve it to Dec 4).",
+   "actual": "status=awaiting_approval; total=$1,157; revisions=0",
+   "checks": [
+    [
+     "resolved to Dec 4",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": true,
+   "seconds": 6.97,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  }
+ ],
+ "consistency": {
+  "T1": 1.0,
+  "T2": 1.0,
+  "T3": 1.0,
+  "T4": 1.0,
+  "T5": 1.0,
+  "T6": 1.0,
+  "T7": 1.0,
+  "T8": 1.0,
+  "T9": 1.0,
+  "T10": 1.0,
+  "T11": 1.0,
+  "T12": 1.0,
+  "T13": 1.0,
+  "T14": 1.0,
+  "T15": 1.0,
+  "T16": 1.0,
+  "T17": 1.0,
+  "T18": 1.0
+ }
+}

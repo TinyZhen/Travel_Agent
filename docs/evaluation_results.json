@@ -143,6 +143,10 @@
    "actual": "status=awaiting_approval; total=$778; revisions=4; asked: The cheapest plan I can build is $778, $478 over your $300 budget. Would you like to raise the budget, shorten to 2 nights, or drive instead of flying?",
    "checks": [
     [
+     "\"4 days\" = 3 nights",
+     true
+    ],
+    [
      "critic revised \u22652 times",
      true
     ],

@@ -37,7 +37,7 @@ Create `backend/.env` with any of the following. Each tool switches to live data
 
 ```
 OPENROUTER_API_KEY=...       # turns on the LLM agents (intake, tool-calling research, summaries)
-LLM_MODEL=anthropic/claude-haiku-4.5   # optional, any OpenRouter model with tool calling
+LLM_MODEL=anthropic/claude-haiku-5.5   # optional, any OpenRouter model with tool calling
 AMADEUS_API_KEY=...          # flights (Amadeus test environment)
 AMADEUS_SECRET=...
 GOOGLE_API_KEY=...           # attractions (Places API)
@@ -76,7 +76,7 @@ python -m eval.run_eval --runs 3                               # with OPENROUTER
 ```
 
 There are 18 scripted scenarios covering functional, end-to-end, human-in-the-loop, failure-handling and known-limitation cases.
-See [docs/evaluation_results.md](docs/evaluation_results.md) for the latest results.
+Latest results: [demo mode](docs/evaluation_results.md) and [LLM mode, Claude Haiku 5.5, 3 runs per case](docs/evaluation_results_llm.md).
 
 ## API
 

@@ -6,7 +6,7 @@
 
 Each case is a scripted conversation plus checks on the final state. Cases marked
 `known_limitation` document behaviour we expect to be imperfect; they are reported,
-not hidden. Results go to docs/evaluation_results.md and docs/evaluation_results.json.
+not hidden. Results go to docs/evaluation_results[_llm].md and .json.
 """
 from __future__ import annotations
 
@@ -67,7 +67,8 @@ CASES: list[dict] = [
     dict(id="T6", category="Human-in-the-loop", title="Infeasible budget → escalate, not fake it",
          turns=["Chicago for 4 days starting Nov 20, budget $300"],
          expected="Critic tries cheaper options, then asks the human (raise budget / shorten / drive).",
-         checks=[("critic revised ≥2 times", lambda s, _: s.plan.revisions >= 2),
+         checks=[("\"4 days\" = 3 nights", lambda s, _: s.spec.nights == 3),
+                 ("critic revised ≥2 times", lambda s, _: s.plan.revisions >= 2),
                  ("over-budget is reported, not hidden", lambda s, _: any(i.startswith("over_budget") for i in s.plan.issues)),
                  ("asks human with options", lambda s, _: any("raise the budget" in q for q in s.questions))]),
     dict(id="T7", category="Functional", title="Driving → no flight search, driving costs",
@@ -180,8 +181,9 @@ def main():
         lines.append(f"| {r['id']} | {r['category']} | {r['title']} | {r['expected']} | {actual} | {res} | "
                      f"{consistency[r['id']]:.0%} |")
     DOCS.mkdir(exist_ok=True)
-    (DOCS / "evaluation_results.md").write_text("\n".join(lines) + "\n")
-    (DOCS / "evaluation_results.json").write_text(json.dumps(
+    stem = "evaluation_results" + ("_llm" if llm.available() else "")
+    (DOCS / f"{stem}.md").write_text("\n".join(lines) + "\n")
+    (DOCS / f"{stem}.json").write_text(json.dumps(
         {"mode": mode, "runs": args.runs, "results": first, "consistency": consistency}, indent=1, default=str))
     print("\n".join(lines))
 

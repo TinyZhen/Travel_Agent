@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEFAULT_MODEL = os.getenv("LLM_MODEL", "anthropic/claude-haiku-4.5")
+DEFAULT_MODEL = os.getenv("LLM_MODEL", "anthropic/claude-haiku-5.5")
 BASE_URL = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1")
 
 _client = None

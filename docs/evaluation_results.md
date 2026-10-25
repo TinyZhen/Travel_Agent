@@ -1,7 +1,7 @@
 # Roameo evaluation results
 
 - Mode: **rules (demo)**, runs per case: 1, reference date 2026-10-25
-- Core cases passed: **16/16**; checks passed: 35/35
+- Core cases passed: **16/16**; checks passed: 36/36
 - Known-limitation cases: 1/2 behaved ideally
 
 | ID | Category | Scenario | Expected | Actual | Result | Consistency |
