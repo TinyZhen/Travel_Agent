@@ -1,225 +1,281 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import AttractionsMap from "./AttractionsMap";
 
+const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+type Item = { kind: string; name: string; hours?: number; time?: string; cost: number; indoor?: boolean; lat?: number; lng?: number; source?: string; url?: string };
+type Day = { date: string; weather?: string; rain_chance?: number; items: Item[] };
+type State = {
+    session_id: string;
+    status: "needs_clarification" | "awaiting_approval" | "approved" | "error";
+    mode: string;
+    spec: { origin: string; destination?: string; start_date?: string; nights: number; travelers: number; budget_usd?: number; interests: string[]; transport: string; assumptions: string[] };
+    questions: string[];
+    plan?: { flight?: any; hotel?: any; days: Day[]; cost_breakdown: Record<string, number>; total_cost: number; summary: string; issues: string[]; revisions: number };
+    trace: { agent: string; action: string; detail: string }[];
+};
+type Msg = { role: "user" | "agent"; text: string };
+
+const EXAMPLES = [
+    "Weekend in New York on Nov 13 with my partner, we love museums and jazz, budget $1500",
+    "Chicago for 4 days, budget $600",
+    "Day trip in Boston on Nov 7, I like history",
+];
+
+const AGENT_COLORS: Record<string, string> = {
+    Intake: "bg-sky-100 text-sky-800",
+    Research: "bg-amber-100 text-amber-800",
+    Critic: "bg-rose-100 text-rose-800",
+    Feedback: "bg-violet-100 text-violet-800",
+    Orchestrator: "bg-emerald-100 text-emerald-800",
+};
+
+const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
+
 export default function TravelAgent() {
-    const [prompt, setPrompt] = useState("");
-    const [result, setResult] = useState<any>(null);
+    const [input, setInput] = useState("");
+    const [state, setState] = useState<State | null>(null);
+    const [msgs, setMsgs] = useState<Msg[]>([]);
+    const [busy, setBusy] = useState(false);
+    const [showTrace, setShowTrace] = useState(true);
+    const endRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+        endRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [msgs]);
 
-    const fetchPlan = async () => {
+    const send = async (text: string) => {
+        if (!text.trim() || busy) return;
+        setMsgs((m) => [...m, { role: "user", text }]);
+        setInput("");
+        setBusy(true);
         try {
-            const res = await fetch("http://localhost:8000/api/agent", {
+            const res = await fetch(`${API}/api/message`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt }),
+                body: JSON.stringify({ message: text, session_id: state?.status === "error" ? null : state?.session_id }),
             });
-            const data = await res.json();
-            console.log("Backend response:", data); // 👈 LOG
-            setResult({
-                summary: data.result,
-                ...data.structured,
-            });
-        } catch (err) {
-            console.error("Fetch or parse error:", err);
-            setResult({ error: "Failed to get plan." });
+            if (!res.ok) throw new Error(`${res.status}`);
+            const data: State = await res.json();
+            setState(data);
+            setMsgs((m) => [...m, { role: "agent", text: replyFor(data) }]);
+        } catch (e) {
+            setMsgs((m) => [...m, { role: "agent", text: `Couldn't reach the planner (${e}). Is the backend running on ${API}?` }]);
+        } finally {
+            setBusy(false);
         }
     };
 
-    const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-        <h2 className="text-3xl font-bold text-gray-800 border-b border-gray-300 pb-2 mb-6">{children}</h2>
-    );
-
-    const Card = ({ image, title, subtitle, description, url, size = "default" }: any) => {
-        const baseClasses = "bg-white rounded-xl shadow p-4 flex flex-col justify-between";
-        const compactClasses = "gap-2 min-h-[180px]";
-        const defaultClasses = "h-[400px]";
-
-        return (
-            <div className={`${baseClasses} ${size === "compact" ? compactClasses : defaultClasses}`}>
-                {image && (
-                    <img
-                        src={image || "/placeholder.jpg"}
-                        alt={title}
-                        referrerPolicy="no-referrer"
-                        onError={(e) => (e.currentTarget.src = "/placeholder.jpg")}
-                        className="w-full h-48 object-cover rounded-lg mb-3"
-                    />
-                )}
-                <h3 className="text-base font-bold text-gray-800 mb-1">{title}</h3>
-                {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
-                {description && (
-                    <div className="text-sm text-gray-600 space-y-1">
-                        {description}
-                    </div>
-                )}
-                {url && (
-                    <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 text-blue-600 hover:underline text-sm"
-                    >
-                        View More
-                    </a>
-                )}
-            </div>
-        );
-    };
-
-
-    const EventsSection = ({ events }: { events: any[] }) =>
-        events?.length ? (
-            <div>
-                <SectionTitle>🎉 Events</SectionTitle>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {events.map((e, i) => (
-                        <Card
-                            key={i}
-                            image={e.image}
-                            title={e.name}
-                            subtitle={e.venue}
-                            description={e.date}
-                            url={e.url}
-                        />
-                    ))}
-                </div>
-            </div>
-        ) : null;
-
-    const FlightsSection = ({ flights }: { flights: any[] }) =>
-        flights?.length ? (
-            <div>
-                <SectionTitle>✈️ Flights</SectionTitle>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {flights.map((f, i) => {
-                        const dep = new Date(f.departure_time).toLocaleString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                        });
-
-                        const arr = new Date(f.arrival_time).toLocaleString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                        });
-
-                        const price = f.price?.toFixed?.(2) ?? f.price;
-
-                        return (
-                            <Card
-                                key={i}
-                                title={`${f.from} → ${f.to}`}
-                                subtitle={
-                                    <>
-                                        <p className="text-sm font-medium text-gray-800">{f.airline}</p>
-                                        <p className="text-sm">Departure: {dep}</p>
-                                        <p className="text-sm">Arrival: {arr}</p>
-                                        <p className="text-sm font-semibold text-green-700">Price: ${price}</p>
-                                    </>
-                                }
-                                size="compact"
-                            />
-                        );
-                    })}
-                </div>
-            </div>
-        ) : null;
-
-
-    const HotelsSection = ({ hotels }: { hotels: any[] }) =>
-        hotels?.length ? (
-            <div>
-                <SectionTitle>🏨 Hotels</SectionTitle>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {hotels.map((h, i) => (
-                        <Card
-                            key={i}
-                            image={h.image}
-                            title={h.name}
-                            subtitle={h.address}
-                            url={h.url}
-                        />
-                    ))}
-                </div>
-            </div>
-        ) : null;
-
-    const AttractionsSection = ({ attractions }: { attractions: any[] }) =>
-        attractions?.length ? (
-            <div>
-                <SectionTitle>🌆 Attractions</SectionTitle>
-                <AttractionsMap attractions={attractions} />
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                    {attractions.map((a, i) => (
-                        <Card
-                            key={i}
-                            image={a.image}
-                            title={a.name}
-                            subtitle={`⭐ ${a.rating} · ${a.reviews} reviews`}
-                            description={`Category: ${a.category}`}
-                            url={a.maps_url}
-                        />
-                    ))}
-                </div>
-            </div>
-        ) : null;
+    const reset = () => { setState(null); setMsgs([]); };
 
     return (
-
-        <div className="min-h-screen bg-gray-50 px-6 py-16">
-            <div className="w-full px-6 space-y-14 ">
-                <h1 className="text-4xl font-bold text-center text-blue-700">
-                    🧠 This is Roameo
-                </h1>
-
-                {/* 输入区：加一层容器并加大间距 */}
-                <div className="flex justify-center">
-                    <div className="w-full max-w-3xl space-y-6">
-                        <div className="flex flex-col sm:flex-row gap-6 items-stretch">
-                            <input
-                                type="text"
-                                placeholder="e.g. I want to visit Chicago on May 7"
-                                className="border border-gray-300 rounded-lg p-4 flex-1 shadow-sm focus:ring focus:ring-blue-200 w-full"
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                            />
-                            <button
-                                onClick={fetchPlan}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-lg shadow w-full sm:w-auto font-semibold"
-                            >
-                                Plan
-                            </button>
-                        </div>
+        <div className="min-h-screen bg-stone-50 text-stone-800">
+            <header className="border-b border-stone-200 bg-white">
+                <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-teal-800">Roameo</h1>
+                        <p className="text-sm text-stone-500">Your trip, planned by agents and approved by you.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        {state && (
+                            <span className={`rounded-full px-3 py-1 text-xs font-medium ${state.mode === "llm" ? "bg-teal-100 text-teal-800" : "bg-amber-100 text-amber-800"}`}>
+                                {state.mode === "llm" ? "LLM agents" : "Demo mode · sample prices"}
+                            </span>
+                        )}
+                        <button onClick={reset} className="text-sm text-stone-500 hover:text-stone-800">New trip</button>
                     </div>
                 </div>
+            </header>
 
-                {result?.summary && (
-                    <div className="bg-white p-6 rounded-2xl shadow border border-gray-100 whitespace-pre-wrap">
-                        <SectionTitle>📝 Plan Summary</SectionTitle>
-                        <p className="text-gray-700 text-lg">
-                            {typeof result.summary === "string"
-                                ? result.summary
-                                : result.summary?.text ?? "No summary available"}
+            <main className="mx-auto grid max-w-7xl gap-6 px-6 py-6 lg:grid-cols-[400px_1fr]">
+                {/* ---------------- conversation */}
+                <section className="flex h-[calc(100vh-130px)] flex-col rounded-2xl border border-stone-200 bg-white">
+                    <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                        {msgs.length === 0 && (
+                            <div className="space-y-2">
+                                <p className="text-sm text-stone-500">Tell me where and when. Try:</p>
+                                {EXAMPLES.map((e) => (
+                                    <button key={e} onClick={() => send(e)} className="block w-full rounded-xl border border-stone-200 p-3 text-left text-sm hover:border-teal-400 hover:bg-teal-50">
+                                        {e}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {msgs.map((m, i) => (
+                            <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                                <div className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${m.role === "user" ? "bg-teal-700 text-white" : "bg-stone-100"}`}>
+                                    {m.text}
+                                </div>
+                            </div>
+                        ))}
+                        {busy && <div className="text-sm text-stone-400">Agents are working…</div>}
+                        <div ref={endRef} />
+                    </div>
+
+                    {state?.status === "awaiting_approval" && (
+                        <div className="flex flex-wrap gap-2 border-t border-stone-100 px-4 pt-3">
+                            <button onClick={() => send("approve")} className="rounded-full bg-teal-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-teal-800">✓ Approve plan</button>
+                            {["make it cheaper", "different hotel", "I'll drive"].map((q) => (
+                                <button key={q} onClick={() => send(q)} className="rounded-full border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100">{q}</button>
+                            ))}
+                        </div>
+                    )}
+                    <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex gap-2 p-4">
+                        <input
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            placeholder={state?.status === "awaiting_approval" ? "Ask for changes, or approve…" : "Where to, and when?"}
+                            className="flex-1 rounded-xl border border-stone-300 px-4 py-2.5 text-sm focus:border-teal-500 focus:outline-none"
+                        />
+                        <button disabled={busy} className="rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white disabled:opacity-50">Send</button>
+                    </form>
+                </section>
+
+                {/* ---------------- plan */}
+                <section className="space-y-6">
+                    {!state?.plan && (
+                        <div className="flex h-64 items-center justify-center rounded-2xl border border-dashed border-stone-300 text-stone-400">
+                            Your plan will appear here.
+                        </div>
+                    )}
+                    {state?.plan && <PlanView state={state} />}
+                    {state && state.trace.length > 0 && (
+                        <div className="rounded-2xl border border-stone-200 bg-white p-5">
+                            <button onClick={() => setShowTrace(!showTrace)} className="flex w-full items-center justify-between text-left">
+                                <h2 className="font-semibold">What the agents did</h2>
+                                <span className="text-sm text-stone-400">{showTrace ? "hide" : "show"} ({state.trace.length} steps)</span>
+                            </button>
+                            {showTrace && (
+                                <ol className="mt-4 space-y-2">
+                                    {state.trace.map((t, i) => (
+                                        <li key={i} className="flex items-start gap-3 text-sm">
+                                            <span className={`w-24 shrink-0 rounded-md px-2 py-0.5 text-center text-xs font-medium ${AGENT_COLORS[t.agent] ?? "bg-stone-100"}`}>{t.agent}</span>
+                                            <span><span className="font-medium">{t.action}</span>{t.detail && <span className="text-stone-500"> · {t.detail}</span>}</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+                        </div>
+                    )}
+                </section>
+            </main>
+        </div>
+    );
+}
+
+function replyFor(s: State): string {
+    if (s.status === "approved") return "Approved! Download your itinerary as a calendar file from the plan panel. Nothing has been booked. Bookings stay in your hands.";
+    const parts: string[] = [];
+    if (s.status === "awaiting_approval" && s.plan) {
+        parts.push(s.plan.summary);
+        if (s.plan.revisions) parts.push(`(The critic revised this plan ${s.plan.revisions}× to fit your constraints.)`);
+    }
+    parts.push(...s.questions);
+    if (s.status === "awaiting_approval" && !s.questions.length) parts.push("Approve it, or tell me what to change.");
+    return parts.join("\n\n");
+}
+
+function PlanView({ state }: { state: State }) {
+    const { plan, spec } = state;
+    if (!plan) return null;
+    const budget = spec.budget_usd;
+    const pct = budget ? Math.min(100, (plan.total_cost / budget) * 100) : 0;
+    const over = budget ? plan.total_cost > budget : false;
+    const points = plan.days.flatMap((d) => d.items).filter((i) => i.lat && i.lng);
+    const isDemo = [plan.flight, plan.hotel, ...plan.days.flatMap((d) => d.items)].some((x) => x?.source === "demo");
+
+    return (
+        <>
+            <div className="rounded-2xl border border-stone-200 bg-white p-5">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                        <p className="text-sm text-stone-500">{spec.origin} → {spec.destination} · {spec.travelers} traveler{spec.travelers > 1 ? "s" : ""} · {spec.nights} night{spec.nights === 1 ? "" : "s"}</p>
+                        <p className="text-3xl font-bold">{money(plan.total_cost)} <span className="text-base font-normal text-stone-500">estimated total</span></p>
+                    </div>
+                    {state.status === "approved" ? (
+                        <a href={`${API}/api/export/${state.session_id}.ics`} className="rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white">Download .ics</a>
+                    ) : (
+                        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">Waiting for your approval</span>
+                    )}
+                </div>
+                {budget && (
+                    <div className="mt-4">
+                        <div className="h-2.5 overflow-hidden rounded-full bg-stone-100">
+                            <div className={`h-full ${over ? "bg-rose-500" : "bg-teal-600"}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <p className={`mt-1 text-xs ${over ? "text-rose-600" : "text-stone-500"}`}>
+                            {over ? `${money(plan.total_cost - budget)} over` : `${money(budget - plan.total_cost)} under`} your {money(budget)} budget
                         </p>
                     </div>
                 )}
+                <div className="mt-4 flex flex-wrap gap-2">
+                    {Object.entries(plan.cost_breakdown).map(([k, v]) => (
+                        <span key={k} className="rounded-lg bg-stone-100 px-2.5 py-1 text-xs">{k.replace(/_/g, " ")}: <b>{money(v)}</b></span>
+                    ))}
+                </div>
+                {spec.assumptions.length > 0 && (
+                    <ul className="mt-4 space-y-1 text-xs text-stone-500">
+                        {spec.assumptions.map((a) => <li key={a}>• {a}</li>)}
+                    </ul>
+                )}
+                {isDemo && <p className="mt-3 text-xs text-amber-700">Demo mode: hotel, flight and event prices are illustrative samples, not live quotes.</p>}
+            </div>
 
-                {result?.events && <EventsSection events={result.events} />}
-                {result?.flights && <FlightsSection flights={result.flights} />}
-                {result?.hotels && <HotelsSection hotels={result.hotels} />}
-                {result?.attractions && <AttractionsSection attractions={result.attractions} />}
-
-                {result?.error && (
-                    <div className="text-red-500 bg-white p-4 rounded shadow border text-center">
-                        Error: {result.error}
-                    </div>
+            <div className="grid gap-4 md:grid-cols-2">
+                {plan.flight && (
+                    <Card title="Flight" accent="border-l-sky-500">
+                        <p className="font-semibold">{plan.flight.airline} · {plan.flight.from} → {plan.flight.to}</p>
+                        <p className="text-sm text-stone-500">{fmtTime(plan.flight.departure_time)} → {fmtTime(plan.flight.arrival_time)}</p>
+                        <p className="text-sm">{money(plan.flight.price_per_person)} / person{plan.flight.round_trip ? " round trip" : ""}</p>
+                    </Card>
+                )}
+                {plan.hotel && (
+                    <Card title="Hotel" accent="border-l-violet-500">
+                        <p className="font-semibold">{plan.hotel.name}</p>
+                        <p className="text-sm text-stone-500">{plan.hotel.tier} · ★ {plan.hotel.rating}</p>
+                        <p className="text-sm">{money(plan.hotel.nightly_price)} / night</p>
+                    </Card>
                 )}
             </div>
+
+            <div className="space-y-3">
+                {plan.days.map((d, i) => (
+                    <div key={d.date} className="rounded-2xl border border-stone-200 bg-white p-5">
+                        <div className="mb-3 flex items-baseline justify-between">
+                            <h3 className="font-semibold">Day {i + 1} · {new Date(d.date + "T12:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</h3>
+                            {d.weather && <span className={`text-xs ${(d.rain_chance ?? 0) >= 60 ? "text-sky-700 font-medium" : "text-stone-500"}`}>{(d.rain_chance ?? 0) >= 60 ? "☔ " : ""}{d.weather}</span>}
+                        </div>
+                        <ul className="space-y-2">
+                            {d.items.map((it) => (
+                                <li key={it.name} className="flex items-center justify-between gap-3 text-sm">
+                                    <span>
+                                        <span className="mr-2 text-stone-400">{it.kind === "event" ? (it.time ?? "evening") : `${it.hours}h`}</span>
+                                        {it.url ? <a href={it.url} target="_blank" rel="noreferrer" className="underline">{it.name}</a> : it.name}
+                                        {it.indoor && <span className="ml-2 rounded bg-stone-100 px-1.5 text-xs text-stone-500">indoor</span>}
+                                    </span>
+                                    <span className="text-stone-500">{it.cost ? money(it.cost) : "free"}</span>
+                                </li>
+                            ))}
+                            {d.items.length === 0 && <li className="text-sm text-stone-400">Free time</li>}
+                        </ul>
+                    </div>
+                ))}
+            </div>
+
+            {points.length > 0 && <AttractionsMap attractions={points} />}
+        </>
+    );
+}
+
+function Card({ title, accent, children }: { title: string; accent: string; children: React.ReactNode }) {
+    return (
+        <div className={`rounded-2xl border border-l-4 border-stone-200 bg-white p-4 ${accent}`}>
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-stone-400">{title}</p>
+            {children}
         </div>
     );
+}
+
+function fmtTime(s: string) {
+    return new Date(s).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }

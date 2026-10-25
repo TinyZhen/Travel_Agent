@@ -1,0 +1,190 @@
+"""Scenario evaluation for Roameo.
+
+    cd backend
+    ROAMEO_OFFLINE=1 python -m eval.run_eval          # deterministic, no keys needed
+    python -m eval.run_eval --runs 3                  # with OPENROUTER_API_KEY: LLM mode, repeated
+
+Each case is a scripted conversation plus checks on the final state. Cases marked
+`known_limitation` document behaviour we expect to be imperfect; they are reported,
+not hidden. Results go to docs/evaluation_results.md and docs/evaluation_results.json.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import pathlib
+import time
+from datetime import date
+from typing import Callable
+
+import llm
+from agents.orchestrator import new_session
+
+TODAY = date(2026, 10, 25)  # fixed so relative dates are reproducible
+DOCS = pathlib.Path(__file__).resolve().parents[2] / "docs"
+
+
+def tools_called(st) -> set[str]:
+    return {t.action.removeprefix("call ") for t in st.trace if t.action.startswith("call ")}
+
+
+def items(st) -> list[dict]:
+    return [it for d in st.plan.days for it in d.items] if st.plan else []
+
+
+Check = tuple[str, Callable]
+
+CASES: list[dict] = [
+    dict(id="T1", category="Functional / E2E", title="Complete request → priced plan",
+         turns=["Weekend trip to New York on Nov 13 with my partner, we love museums and jazz, budget $1500"],
+         expected="Plan for 2 travelers, Nov 13–15, all 5 tools used, total ≤ $1500, no questions.",
+         checks=[("status awaiting approval", lambda s, _: s.status == "awaiting_approval"),
+                 ("2 travelers, 2 nights", lambda s, _: (s.spec.travelers, s.spec.nights) == (2, 2)),
+                 ("start date 2026-11-13", lambda s, _: str(s.spec.start_date) == "2026-11-13"),
+                 ("all 5 tools called", lambda s, _: len(tools_called(s)) == 5),
+                 ("within budget", lambda s, _: s.plan.total_cost <= 1500),
+                 ("museum interest used", lambda s, _: sum("museum" in (it["name"].lower()) for it in items(s)) >= 2)]),
+    dict(id="T2", category="Human-in-the-loop", title="Missing date → agent asks, then plans",
+         turns=["I want to go to Chicago for 3 nights", "Nov 20"],
+         expected="Turn 1 asks for a date; turn 2 produces a plan starting Nov 20.",
+         checks=[("asked for date first", lambda s, h: "date" in " ".join(h[0]["questions"]).lower()),
+                 ("then planned", lambda s, _: s.status == "awaiting_approval" and s.plan is not None),
+                 ("date applied", lambda s, _: str(s.spec.start_date) == "2026-11-20")]),
+    dict(id="T3", category="Human-in-the-loop", title="Missing destination → asks",
+         turns=["Plan me a relaxing trip next weekend"],
+         expected="Asks where to go; does not invent a destination.",
+         checks=[("asks where", lambda s, _: any("where" in q.lower() for q in s.questions)),
+                 ("no plan invented", lambda s, _: s.plan is None)]),
+    dict(id="T4", category="Failure handling", title="Unknown city → asks for clarification",
+         turns=["Take me to Atlantis on Nov 20"],
+         expected="Says it cannot find the city and asks which one is meant.",
+         checks=[("asks about the city", lambda s, _: any("couldn't find" in q for q in s.questions)),
+                 ("no plan", lambda s, _: s.plan is None)]),
+    dict(id="T5", category="Failure handling", title="Past date is rejected",
+         turns=["Trip to Montreal on 2026-03-03 for 2 nights"],
+         expected="Flags the date as in the past and asks again.",
+         checks=[("flags past date", lambda s, _: any("past" in q for q in s.questions))]),
+    dict(id="T6", category="Human-in-the-loop", title="Infeasible budget → escalate, not fake it",
+         turns=["Chicago for 4 days starting Nov 20, budget $300"],
+         expected="Critic tries cheaper options, then asks the human (raise budget / shorten / drive).",
+         checks=[("critic revised ≥2 times", lambda s, _: s.plan.revisions >= 2),
+                 ("over-budget is reported, not hidden", lambda s, _: any(i.startswith("over_budget") for i in s.plan.issues)),
+                 ("asks human with options", lambda s, _: any("raise the budget" in q for q in s.questions))]),
+    dict(id="T7", category="Functional", title="Driving → no flight search, driving costs",
+         turns=["Road trip to Montreal on Nov 14 for 2 nights, I'll drive"],
+         expected="Flights tool not called; gas/parking appear in the cost breakdown.",
+         checks=[("no flight tool", lambda s, _: "search_flights" not in tools_called(s)),
+                 ("gas & parking costed", lambda s, _: {"gas_and_tolls", "parking"} <= s.plan.cost_breakdown.keys())]),
+    dict(id="T8", category="Functional", title="Local day trip → no flight or hotel",
+         turns=["Day trip in Boston on Nov 7, I like history"],
+         expected="Treated as local: no flight, no hotel; history sights first.",
+         checks=[("local transport", lambda s, _: s.spec.transport == "local"),
+                 ("no flight/hotel tools", lambda s, _: not {"search_flights", "search_hotels"} & tools_called(s)),
+                 ("history first", lambda s, _: "Freedom Trail" in items(s)[0]["name"])]),
+    dict(id="T9", category="Real-world adaptation", title="Rainy day → indoor activities first",
+         turns=["New York Nov 6 for 2 nights with museums"],
+         expected="On days with ≥60% rain the first activity is indoors.",
+         checks=[("rain rule respected", lambda s, _: all(
+             d.items[0].get("indoor") for d in s.plan.days if (d.rain_chance or 0) >= 60 and d.items))]),
+    dict(id="T10", category="Human-in-the-loop", title="Feedback: \"cheaper\" really lowers price",
+         turns=["Weekend in New York on Nov 13, budget $2000", "make it cheaper"],
+         expected="Second plan total is strictly lower than the first.",
+         checks=[("price dropped", lambda s, h: s.plan.total_cost < h[0]["total"])]),
+    dict(id="T11", category="Human-in-the-loop", title="Feedback: \"different hotel\"",
+         turns=["Washington DC on Nov 20 for 2 nights", "I'd like a different hotel"],
+         expected="Hotel changes; the rejected one is not re-proposed.",
+         checks=[("hotel changed", lambda s, h: s.plan.hotel["name"] != h[0]["hotel"])]),
+    dict(id="T12", category="Human-in-the-loop", title="Feedback: skip a specific place",
+         turns=["San Francisco on Nov 20 for 3 nights", "skip Alcatraz please"],
+         expected="Alcatraz removed from the itinerary.",
+         checks=[("Alcatraz was in first plan", lambda s, h: h[0]["status"] == "awaiting_approval"),
+                 ("Alcatraz removed", lambda s, _: s.plan and not any("Alcatraz" in it["name"] for it in items(s)))]),
+    dict(id="T13", category="Safety / oversight", title="Nothing exported before approval",
+         turns=["Philadelphia on Nov 20 for 2 nights", "approve"],
+         expected="Status only becomes approved after explicit human approval.",
+         checks=[("awaiting before approval", lambda s, h: h[0]["status"] == "awaiting_approval"),
+                 ("approved after", lambda s, _: s.status == "approved")]),
+    dict(id="T14", category="Functional", title="Group of 4 → 2 rooms, per-person costs scale",
+         turns=["Family of 4 to Chicago on Nov 20 for 2 nights, kids love science"],
+         expected="Hotel cost = 2 rooms; family/science attractions prioritised.",
+         checks=[("2 rooms priced", lambda s, _: s.plan.cost_breakdown["hotel"] == s.plan.hotel["nightly_price"] * 2 * 2),
+                 ("family/science picks", lambda s, _: any(n in it["name"] for it in items(s) for n in ("Field Museum", "Shedd")))]),
+    dict(id="T15", category="Failure handling", title="Vague feedback → asks instead of guessing",
+         turns=["Montreal on Nov 20 for 2 nights", "hmm not sure"],
+         expected="No change to the plan; agent explains what it can change.",
+         checks=[("plan unchanged", lambda s, h: s.plan.total_cost == h[0]["total"]),
+                 ("helpful question", lambda s, _: any("wasn't sure" in q for q in s.questions))]),
+    dict(id="T16", category="Human-in-the-loop", title="Raise budget after escalation",
+         turns=["Chicago for 4 days starting Nov 20, budget $600", "budget is $1400"],
+         expected="After the human raises the budget, the plan fits and the question disappears.",
+         checks=[("fits new budget", lambda s, _: s.plan.total_cost <= 1400),
+                 ("no open question", lambda s, _: not s.questions)]),
+    dict(id="T17", category="Known limitation", title="City outside demo data (Paris)", known_limitation=True,
+         turns=["Paris on Nov 20 for 3 nights"],
+         expected="Offline: cannot resolve the city and asks. Live: resolves via geocoding but has no airport code, so flights fail and the human is asked.",
+         checks=[("handled without crashing, human asked", lambda s, _: bool(s.questions))]),
+    dict(id="T18", category="Known limitation", title="Complex date phrase", known_limitation=True,
+         turns=["New York the first weekend of December"],
+         expected="Rule parser can't resolve the phrase → asks for a date (LLM mode should resolve it to Dec 4).",
+         checks=[("resolved to Dec 4", lambda s, _: str(s.spec.start_date) == "2026-12-04")]),
+]
+
+
+def run_case(case: dict) -> dict:
+    sess = new_session(TODAY)
+    snapshots, t0 = [], time.time()
+    for msg in case["turns"]:
+        st = sess.handle(msg)
+        snapshots.append({"status": st.status, "questions": list(st.questions),
+                          "total": st.plan.total_cost if st.plan else None,
+                          "hotel": st.plan.hotel["name"] if st.plan and st.plan.hotel else None})
+    elapsed = time.time() - t0
+    results = []
+    for name, fn in case["checks"]:
+        try:
+            ok = bool(fn(st, snapshots))
+        except Exception as e:
+            ok, name = False, f"{name} (error: {type(e).__name__})"
+        results.append((name, ok))
+    actual = (f"status={st.status}; " + (f"total=${st.plan.total_cost:,.0f}; revisions={st.plan.revisions}; "
+                                         if st.plan else "") + (f"asked: {st.questions[0]}" if st.questions else ""))
+    return {"id": case["id"], "category": case["category"], "title": case["title"],
+            "expected": case["expected"], "actual": actual.strip("; "),
+            "checks": results, "passed": all(ok for _, ok in results),
+            "known_limitation": case.get("known_limitation", False), "seconds": round(elapsed, 2),
+            "tools": sorted(tools_called(st))}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--runs", type=int, default=1, help="repeat each case to measure consistency")
+    args = ap.parse_args()
+    mode = "llm" if llm.available() else "rules (demo)"
+    all_runs = [[run_case(c) for c in CASES] for _ in range(args.runs)]
+    first = all_runs[0]
+    consistency = {c["id"]: sum(r[i]["passed"] for r in all_runs) / args.runs for i, c in enumerate(CASES)}
+
+    core = [r for r in first if not r["known_limitation"]]
+    lines = [f"# Roameo evaluation results", "",
+             f"- Mode: **{mode}**, runs per case: {args.runs}, reference date {TODAY}",
+             f"- Core cases passed: **{sum(r['passed'] for r in core)}/{len(core)}**; "
+             f"checks passed: {sum(ok for r in core for _, ok in r['checks'])}/{sum(len(r['checks']) for r in core)}",
+             f"- Known-limitation cases: {sum(r['passed'] for r in first if r['known_limitation'])}/"
+             f"{sum(r['known_limitation'] for r in first)} behaved ideally", "",
+             "| ID | Category | Scenario | Expected | Actual | Result | Consistency |",
+             "|---|---|---|---|---|---|---|"]
+    for r in first:
+        res = "✅ pass" if r["passed"] else ("⚠️ limitation" if r["known_limitation"] else "❌ fail")
+        failed = [n for n, ok in r["checks"] if not ok]
+        actual = r["actual"].replace("|", "/") + (f" — failed: {', '.join(failed)}" if failed else "")
+        lines.append(f"| {r['id']} | {r['category']} | {r['title']} | {r['expected']} | {actual} | {res} | "
+                     f"{consistency[r['id']]:.0%} |")
+    DOCS.mkdir(exist_ok=True)
+    (DOCS / "evaluation_results.md").write_text("\n".join(lines) + "\n")
+    (DOCS / "evaluation_results.json").write_text(json.dumps(
+        {"mode": mode, "runs": args.runs, "results": first, "consistency": consistency}, indent=1, default=str))
+    print("\n".join(lines))
+
+
+if __name__ == "__main__":
+    main()
