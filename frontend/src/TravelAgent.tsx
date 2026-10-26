@@ -339,7 +339,9 @@ function DayCard({ day: d, index: i, active, changes, onFocus, sessionId }: {
                                 </div>
                                 {(isStop || it.kind === "event") && (
                                     <span className="shrink-0 text-sm text-stone-500">
-                                        {it.price_unknown ? "price on site" : it.cost ? `${money(it.cost)}${it.cost_estimated ? " est." : ""}` : "free"}
+                                        {it.price_unknown
+                                            ? (it.url ? <a href={it.url} target="_blank" rel="noreferrer" className="text-teal-700 hover:underline">price on site ↗</a> : "price on site")
+                                            : it.cost ? `${money(it.cost)}${it.cost_estimated ? " est." : ""}` : "free"}
                                     </span>
                                 )}
                             </div>

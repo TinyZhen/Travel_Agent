@@ -175,6 +175,13 @@ def maps_link(name: str, city: str) -> str:
     return f"https://www.google.com/maps/search/?api=1&query={q}"
 
 
+def event_link(e: dict, city: str) -> Optional[str]:
+    """The event's own page, or a web search for it when the source gave no link (never for sample events)."""
+    if e.get("url") or e.get("source") == "demo":
+        return e.get("url")
+    return "https://www.google.com/search?q=" + quote_plus(f"{e['name']} {city} {e.get('date', '')} tickets")
+
+
 def food_link(near: Optional[dict]) -> Optional[str]:
     if not near or near.get("lat") is None:
         return None
@@ -371,7 +378,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                              if interests & set(daytime.get("tags", [])) else "Daytime event",
                              "cost": (daytime.get("price_per_person") or 0) * travelers,
                              "price_unknown": daytime.get("price_per_person") is None,
-                             "url": daytime.get("url"), "source": daytime.get("source")})
+                             "url": event_link(daytime, spec.destination), "source": daytime.get("source")})
             clock = max(clock, ev) + 120
         fill(end)
         if not lunch_done and clock > _hm("12:00") and clock < _hm("16:00"):
@@ -397,7 +404,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                                  if interests & set(event.get("tags", [])) else "Evening event",
                                  "cost": (event.get("price_per_person") or 0) * travelers,
                                  "price_unknown": event.get("price_per_person") is None,
-                                 "url": event.get("url"), "source": event.get("source")})
+                                 "url": event_link(event, spec.destination), "source": event.get("source")})
             else:
                 dp.items.append({"kind": "meal", "url": food_link(pos), "name": f"Dinner near {last_sight or base['name']}",
                                  "start": _fmt(max(clock + 30, _hm("19:00"))),
