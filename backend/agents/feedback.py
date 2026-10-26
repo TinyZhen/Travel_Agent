@@ -9,6 +9,7 @@ import re
 
 import llm
 from agents.intake import INTEREST_WORDS
+from fixtures.demo_data import ACTIVITIES, ACTIVITY_WORDS
 
 TAGS = sorted(INTEREST_WORDS) + ["landmark"]
 SYNONYMS = {w: tag for tag, words in INTEREST_WORDS.items() for w in words + [tag]}
@@ -22,7 +23,8 @@ stating or raising a budget such as "budget is $1400" is NOT cheaper), different
 more (list of tags they want MORE of; only the kinds they actually named, e.g. "more museums" -> ["museum"]),
 less (list of tags they want LESS of),
 pace ("relaxed" | "packed" | "normal"),
-add_places (list of specific named places they want added),
+activities (specific things they want to DO; list from: {activities}),
+add_places (list of specific NAMED places they want added, e.g. "the Guggenheim"; never a category like "ski resort"),
 remove_places (list of names, copied exactly from the plan, that they want removed).
 Allowed tags: {tags}.
 Places currently in the plan: {places}."""
@@ -54,6 +56,7 @@ def rule_parse(message: str, plan_names: list[str]) -> dict:
         ops["pace"] = "relaxed"
     elif re.search(r"\b(packed|busier|fit more in|more things|see as much)\b", t):
         ops["pace"] = "packed"
+    ops["activities"] = [k for k, ws in ACTIVITY_WORDS.items() if any(re.search(rf"\b{w}\b", t) for w in ws)]
     ops["add_places"] = [m[1].strip() for m in re.finditer(
         r"\b(?:add|include|also see|squeeze in)\s+(?:the\s+)?([A-Z][\w'&.-]*(?:\s+(?:of\s+)?[A-Z][\w'&.-]*)*)", message)]
     ops["remove_places"] = []
@@ -70,7 +73,8 @@ def parse(message: str, plan_names: list[str]) -> tuple[dict, str]:
     if not llm.available():
         return ops, "rules"
     try:
-        data = llm.chat_json(SYSTEM.format(tags=", ".join(TAGS), places="; ".join(plan_names)), message)
+        data = llm.chat_json(SYSTEM.format(tags=", ".join(TAGS), places="; ".join(plan_names),
+                                           activities=", ".join(ACTIVITIES)), message)
     except Exception:
         return ops, "rules"
     for k in ("approve", "cheaper", "different_hotel", "different_flight", "upgrade_hotel"):
@@ -82,6 +86,9 @@ def parse(message: str, plan_names: list[str]) -> tuple[dict, str]:
             ops[k] = sorted(tags | set(ops.get(k, [])))
     if data.get("pace") in ("relaxed", "packed", "normal"):
         ops["pace"] = data["pace"]
+    acts = [a for a in data.get("activities") or [] if a in ACTIVITIES]
+    if acts or ops.get("activities"):
+        ops["activities"] = sorted(set(acts) | set(ops.get("activities", [])))
     for k in ("add_places", "remove_places"):
         vals = list(dict.fromkeys((ops.get(k) or []) + [str(x) for x in data.get(k) or []]))
         if vals:

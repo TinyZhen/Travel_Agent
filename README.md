@@ -66,7 +66,7 @@ Each visitor is also limited to `ROAMEO_RATE_LIMIT` requests per hour (default 6
 | Agent | Job | LLM mode | Demo mode |
 |---|---|---|---|
 | **Intake** (`agents/intake.py`) | Turn free text into a trip spec (destination, dates, nights, travelers, budget, interests, transport); decide what must be asked | LLM JSON extraction | Regex/rule parser |
-| **Research** (`agents/research.py`) | Decide which tools a trip needs and call them, e.g. no flights for a road trip | Tool-calling loop (≤ 8 steps) + coverage guardrail | Rule policy |
+| **Research** (`agents/research.py`) | Decide which tools a trip needs and call them, e.g. no flights for a road trip; search for requested activities (skiing, hiking, golf…) in a radius that fits them; on cold trips, look for indoor and winter options | Tool-calling loop (≤ 8 steps) + coverage guardrail | Rule policy |
 | **Composer** (`agents/composer.py`) | Pick flight & hotel; hour-by-hour days with travel time between stops, meals, events, arrival and departure (rain → indoor first); price everything | Deterministic; LLM writes the summary | Deterministic |
 | **Critic** (`agents/critic.py`) | Check budget, dates, duplicates, weather; choose the next safe repair | Deterministic | Deterministic |
 | **Feedback** (`agents/feedback.py`) | Turn "more museums", "slower pace", "add the Guggenheim", "skip Alcatraz" into edit operations; send Research to search when more places are needed | LLM JSON + rules | Rules |

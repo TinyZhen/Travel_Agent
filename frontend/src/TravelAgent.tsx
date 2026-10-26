@@ -313,7 +313,7 @@ function DayCard({ day: d, index: i, active, changes, onFocus, sessionId }: {
                         <li key={`${it.name}-${j}`} className="relative pb-4 pl-5 last:pb-0">
                             {it.travel && (
                                 <p className="-ml-5 mb-2 pl-5 text-xs text-stone-400">
-                                    {it.travel.mode === "walk" ? "🚶" : "🚇"} {it.travel.minutes} min {it.travel.mode === "walk" ? "walk" : "by transit"} · {it.travel.km} km
+                                    {{ walk: "🚶", transit: "🚇", drive: "🚗" }[it.travel.mode] ?? "🚇"} {it.travel.minutes} min {{ walk: "walk", transit: "by transit", drive: "drive" }[it.travel.mode] ?? ""} · {it.travel.km} km
                                 </p>
                             )}
                             <span className="absolute -left-[62px] w-12 text-right text-xs tabular-nums text-stone-500">{it.start}</span>

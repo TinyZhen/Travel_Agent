@@ -134,3 +134,52 @@ EVENTS = [
 ]
 
 AIRLINES = ["JetBlue", "Delta Air Lines", "American Airlines", "United Airlines"]
+
+# Major US/Canada airports (IATA, lat, lng) for finding the nearest airport to any city.
+AIRPORTS = [
+    ("ATL", 33.64, -84.43), ("BOS", 42.37, -71.01), ("BWI", 39.18, -76.67), ("CLE", 41.41, -81.85),
+    ("CLT", 35.21, -80.94), ("CMH", 39.998, -82.89), ("CVG", 39.05, -84.67), ("DCA", 38.85, -77.04),
+    ("DEN", 39.86, -104.67), ("DFW", 32.90, -97.04), ("DTW", 42.21, -83.35), ("EWR", 40.69, -74.17),
+    ("FLL", 26.07, -80.15), ("GRR", 42.88, -85.52), ("HNL", 21.32, -157.92), ("IAD", 38.95, -77.46),
+    ("IAH", 29.98, -95.34), ("IND", 39.72, -86.29), ("JFK", 40.64, -73.78), ("LAS", 36.08, -115.15),
+    ("LAX", 33.94, -118.41), ("LGA", 40.78, -73.87), ("MCI", 39.30, -94.71), ("MCO", 28.43, -81.31),
+    ("MDW", 41.79, -87.75), ("MIA", 25.79, -80.29), ("MKE", 42.95, -87.90), ("MSP", 44.88, -93.22),
+    ("MSY", 29.99, -90.26), ("ORD", 41.98, -87.90), ("PDX", 45.59, -122.60), ("PHL", 39.87, -75.24),
+    ("PHX", 33.43, -112.01), ("PIT", 40.49, -80.23), ("RDU", 35.88, -78.79), ("SAN", 32.73, -117.19),
+    ("SAT", 29.53, -98.47), ("SEA", 47.45, -122.31), ("SFO", 37.62, -122.38), ("SLC", 40.79, -111.98),
+    ("STL", 38.75, -90.37), ("TPA", 27.98, -82.53), ("AUS", 30.19, -97.67), ("BNA", 36.12, -86.68),
+    ("BUF", 42.94, -78.73), ("BUR", 34.20, -118.36), ("BTV", 44.47, -73.15), ("PWM", 43.65, -70.31),
+    ("PVD", 41.72, -71.43), ("ALB", 42.75, -73.80), ("SYR", 43.11, -76.11), ("ROC", 43.12, -77.67),
+    ("MHT", 42.93, -71.44), ("BDL", 41.94, -72.68), ("RIC", 37.51, -77.32), ("ORF", 36.89, -76.20),
+    ("SAV", 32.13, -81.20), ("CHS", 32.90, -80.04), ("JAX", 30.49, -81.69), ("RSW", 26.54, -81.76),
+    ("MEM", 35.04, -89.98), ("SDF", 38.17, -85.74), ("OKC", 35.39, -97.60), ("TUL", 36.20, -95.89),
+    ("OMA", 41.30, -95.89), ("DSM", 41.53, -93.66), ("MSN", 43.14, -89.34), ("GRB", 44.48, -88.13),
+    ("TVC", 44.74, -85.58), ("LAN", 42.78, -84.59), ("FNT", 42.97, -83.74), ("ABQ", 35.04, -106.61),
+    ("SJC", 37.36, -121.93), ("OAK", 37.72, -122.22), ("SMF", 38.70, -121.59), ("BOI", 43.56, -116.22),
+    ("ANC", 61.17, -149.99), ("ASE", 39.22, -106.87), ("EGE", 39.64, -106.92), ("JAC", 43.61, -110.74),
+    ("YUL", 45.47, -73.74), ("YYZ", 43.68, -79.63), ("YVR", 49.19, -123.18), ("YOW", 45.32, -75.67),
+    ("YQB", 46.79, -71.39), ("YYC", 51.13, -114.01),
+]
+
+# Specific activities a traveler can ask for: Google Maps query, search radius (km),
+# typical cost per person (USD, est.), hours, tags.
+ACTIVITIES = {
+    "skiing": ("ski resorts", 150, 90, 4, ["skiing", "winter", "outdoors"]),
+    "hiking": ("hiking trails", 80, 0, 3, ["hiking", "nature", "outdoors"]),
+    "ice skating": ("ice skating rinks", 25, 15, 1.5, ["winter", "family", "outdoors"]),
+    "kayaking": ("kayak rentals", 80, 50, 3, ["outdoors", "nature"]),
+    "beach": ("beaches", 80, 0, 3, ["outdoors", "nature"]),
+    "golf": ("golf courses", 40, 70, 4, ["outdoors"]),
+    "spa": ("day spas", 20, 120, 2.5, ["spa"]),
+    "snow tubing": ("snow tubing", 120, 30, 2.5, ["winter", "outdoors", "family"]),
+}
+ACTIVITY_WORDS = {
+    "skiing": ["ski", "skiing", "snowboard", "snowboarding", "slopes"],
+    "hiking": ["hike", "hiking", "trek", "trekking"],
+    "ice skating": ["ice skate", "ice skating", "skating"],
+    "kayaking": ["kayak", "kayaking", "canoe", "canoeing", "paddling"],
+    "beach": ["beach", "beaches"],
+    "golf": ["golf", "golfing"],
+    "spa": ["spa"],
+    "snow tubing": ["snow tubing", "tubing", "sledding"],
+}

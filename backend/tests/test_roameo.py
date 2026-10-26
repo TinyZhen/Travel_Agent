@@ -88,3 +88,40 @@ def test_access_code(monkeypatch):
     assert client.post("/api/message", json={"message": "hi"}).status_code == 401
     ok = client.post("/api/message", json={"message": "hi"}, headers={"X-Access-Code": "letmein"})
     assert ok.status_code == 200
+
+
+SKI = [{"name": "Test Ski Hill", "lat": 42.50, "lng": -83.30, "tags": ["skiing", "winter", "outdoors"],
+        "activity": "skiing", "indoor": False, "cost_per_person": 90, "cost_estimated": True, "hours": 4,
+        "rating": 4.4, "km_from_city": 25, "match": 3, "source": "google_maps"}]
+
+
+def _ski_tool(monkeypatch, places):
+    import tools
+    monkeypatch.setitem(tools.REGISTRY, "search_activity", lambda destination, activity: places)
+
+
+def test_requested_activity_gets_a_full_day(monkeypatch):
+    from datetime import date
+    from agents.orchestrator import new_session
+    _ski_tool(monkeypatch, SKI)
+    st = new_session(date(2026, 10, 26)).handle("Detroit on Dec 22 for 3 days from Boston, include a ski trip")
+    ski = [(i, it) for i, d in enumerate(st.plan.days) for it in d.items if it.get("activity") == "skiing"]
+    assert len(ski) == 1
+    day, item = ski[0]
+    assert day == 1 and item["travel"]["mode"] == "drive" and "You asked for skiing" in item["why"]
+
+
+def test_asking_for_activity_later_adds_it_or_says_why_not(monkeypatch):
+    from datetime import date
+    from agents.orchestrator import new_session
+    _ski_tool(monkeypatch, [])
+    s = new_session(date(2026, 10, 26))
+    s.handle("Detroit on Dec 22 for 3 days from Boston")
+    st = s.handle("i want to go ski")
+    assert any("couldn't find anywhere for skiing" in q for q in st.questions)
+    assert not any("ski" in it["name"].lower() or it.get("activity") for d in st.plan.days for it in d.items)
+    _ski_tool(monkeypatch, SKI)
+    s = new_session(date(2026, 10, 26))
+    s.handle("Detroit on Dec 22 for 3 days from Boston")
+    st = s.handle("i want to go ski")
+    assert "+ Test Ski Hill" in st.plan.changes

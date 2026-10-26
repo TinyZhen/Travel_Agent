@@ -9,7 +9,7 @@ from typing import Optional
 import llm
 from schemas import TripSpec
 from tools import drive_hours, resolve_city, us_state
-from fixtures.demo_data import CITIES, CITY_ALIASES
+from fixtures.demo_data import ACTIVITIES, ACTIVITY_WORDS, CITIES, CITY_ALIASES
 
 MONTHS = {m: i for i, m in enumerate(
     ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
@@ -31,6 +31,7 @@ start_date (YYYY-MM-DD or null; resolve relative dates like "next weekend" from 
 on the Friday; copy explicit dates exactly as written even if they are in the past, because the system validates them),
 nights (int; "N days" means N-1 nights, "a weekend" means 2 nights), travelers (int), budget_usd (number or null, total for the whole party),
 interests (list from: museum, art, history, food, nature, music, family, nightlife, science, shopping, architecture, outdoors, comedy),
+activities (specific things they want to DO, list from: skiing, hiking, ice skating, kayaking, beach, golf, spa, snow tubing),
 transport ("fly", "drive" or "local"), hotel_preference ("budget","mid","luxury","any").
 Only include keys the text actually supports; omit the rest. Do not invent a destination or date."""
 
@@ -140,6 +141,9 @@ def rule_extract(text: str, today: date, feedback: bool = False) -> dict:
         out["hotel_preference"] = "budget"
     elif re.search(r"\b(luxury|fancy|5-star|five star)\b", t):
         out["hotel_preference"] = "luxury"
+    activities = [k for k, words in ACTIVITY_WORDS.items() if any(re.search(rf"\b{w}\b", t) for w in words)]
+    if activities:
+        out["activities"] = activities
     interests = [k for k, words in INTEREST_WORDS.items() if any(re.search(rf"\b{w}\b", t) for w in words)]
     if interests:
         out["interests"] = interests
@@ -155,6 +159,7 @@ def extract(text: str, today: Optional[date] = None, feedback: bool = False) -> 
             data = llm.chat_json(SYSTEM.format(today=today.isoformat()), text)
             if data.get("start_date"):
                 data["start_date"] = date.fromisoformat(data["start_date"])
+            data["activities"] = [a for a in data.get("activities") or [] if a in ACTIVITIES]
             return {k: v for k, v in data.items() if v not in (None, "", [])}, "llm"
         except Exception:
             pass

@@ -66,8 +66,15 @@ def resolve_city(name: str) -> Optional[dict]:
     hit = max(places, key=lambda h: h.get("population") or 0, default=None)
     if not hit or (hit.get("population") or 0) < 10000:
         return None
-    return {"name": hit["name"], "lat": hit["latitude"], "lng": hit["longitude"], "tz": hit.get("timezone"),
-            "region": hit.get("admin1"), "iata": None, "city_code": None, "key": None}
+    city = {"name": hit["name"], "lat": hit["latitude"], "lng": hit["longitude"], "tz": hit.get("timezone"),
+            "region": hit.get("admin1"), "city_code": None, "key": None}
+    city["iata"] = nearest_airport(city)
+    return city
+
+
+def nearest_airport(c: dict, max_km: float = 150) -> Optional[str]:
+    code, lat, lng = min(D.AIRPORTS, key=lambda a: _haversine_km(c, {"lat": a[1], "lng": a[2]}))
+    return code if _haversine_km(c, {"lat": lat, "lng": lng}) <= max_km else None
 
 
 def us_state(name: str) -> Optional[tuple[str, list[str]]]:
@@ -300,6 +307,45 @@ def _google_attractions(c: dict) -> list[dict]:
     return out[:8]
 
 
+# ----------------------------------------------------------------- activities
+# Place types that really are the activity (so "ski resort" never returns a city park).
+ACTIVITY_TYPES = {
+    "skiing": ["ski"], "hiking": ["trail", "hiking", "state park", "nature preserve", "national park"],
+    "ice skating": ["skating", "ice rink"], "kayaking": ["kayak", "canoe", "boat rental"],
+    "beach": ["beach"], "golf": ["golf"], "spa": ["spa"], "snow tubing": ["tubing", "ski", "snow"],
+}
+
+
+def search_activity(destination: str, activity: str) -> list[dict]:
+    """Places for a specific activity the traveler asked for, searched in a radius that fits it
+    (ski areas are rarely inside a city: up to 150 km)."""
+    c = resolve_city(destination)
+    if not c or activity not in D.ACTIVITIES:
+        return [{"error": f"Unknown city or activity: {destination}, {activity}"}]
+    query, radius, cost, hours, tags = D.ACTIVITIES[activity]
+    zoom = 9 if radius > 80 else 10 if radius > 25 else 12
+    res = _serpapi({"engine": "google_maps", "type": "search", "q": f"{query} near {c['name']}",
+                    "ll": f"@{c['lat']},{c['lng']},{zoom}z"})
+    out = []
+    for r in (res or {}).get("local_results", []):
+        gps = r.get("gps_coordinates") or {}
+        kind = " ".join([r.get("type") or ""] + (r.get("types") or [])).lower()
+        if not gps or not any(k in kind for k in ACTIVITY_TYPES[activity]):
+            continue
+        km = _haversine_km(c, {"lat": gps["latitude"], "lng": gps["longitude"]})
+        if km > radius or (r.get("rating") or 0) < 3.8:
+            continue
+        out.append({"name": r.get("title"), "lat": gps["latitude"], "lng": gps["longitude"], "tags": tags,
+                    "activity": activity, "indoor": activity == "spa", "cost_per_person": cost,
+                    "cost_estimated": True, "hours": hours, "rating": r.get("rating"), "reviews": r.get("reviews"),
+                    "km_from_city": round(km), "match": 3, "source": "google_maps",
+                    "url": f"https://www.google.com/maps/place/?q=place_id:{r['place_id']}" if r.get("place_id") else None})
+    # Quality (rating, weighted by how many reviews) minus distance: a good hill 17 km away beats
+    # a slightly better one 140 km away when it's a day out of a short trip.
+    return sorted(out, key=lambda a: -((a["rating"] or 0) * math.log(max(a.get("reviews") or 1, 1) + 1)
+                                       - a["km_from_city"] / 25))[:5]
+
+
 # --------------------------------------------------------------------- events
 def search_events(destination: str, start_date: str, nights: int = 2,
                   interests: Optional[list[str]] = None) -> list[dict]:
@@ -495,6 +541,7 @@ REGISTRY = {
     "search_attractions": search_attractions,
     "search_events": search_events,
     "get_weather": get_weather,
+    "search_activity": search_activity,
 }
 
 SCHEMAS = [

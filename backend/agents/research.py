@@ -81,8 +81,22 @@ def run(spec: TripSpec, log: Callable[[TraceStep], None]) -> dict:
     if missing and llm.available():
         log(TraceStep(agent="Research", action="guardrail", detail=f"required but skipped: {', '.join(missing)}"))
     _call_many([(n, _default_args(n, spec)) for n in missing], results, log)
+    for act in spec.activities:
+        search_activity(spec, results, act, log)
     _seasonal_extras(spec, results, log)
     return results
+
+
+def search_activity(spec: TripSpec, results: dict, activity: str, log: Callable[[TraceStep], None]) -> list[dict]:
+    """Find places for an activity the traveler asked for (e.g. ski areas, which are usually outside the city)."""
+    found = [a for a in _execute("search_activity", {"destination": spec.destination, "activity": activity})
+             if isinstance(a, dict) and "error" not in a]
+    results[f"activity:{activity}"] = found
+    radius = tools.D.ACTIVITIES[activity][1]
+    log(TraceStep(agent="Research", action=f"search activity: {activity}",
+                  detail=(f"{len(found)} places within {radius} km; best: {found[0]['name']} ({found[0]['km_from_city']} km)"
+                          if found else f"nothing found within {radius} km")))
+    return found
 
 
 def _seasonal_extras(spec: TripSpec, results: dict, log: Callable[[TraceStep], None]) -> None:

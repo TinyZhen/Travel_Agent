@@ -16,6 +16,7 @@ class TripSpec(BaseModel):
     travelers: int = 1
     budget_usd: Optional[float] = None
     interests: list[str] = Field(default_factory=list)
+    activities: list[str] = Field(default_factory=list)  # specific things to do: skiing, hiking, golf…
     transport: Literal["fly", "drive", "local"] = "fly"
     hotel_preference: Literal["budget", "mid", "luxury", "any"] = "any"
     assumptions: list[str] = Field(default_factory=list)

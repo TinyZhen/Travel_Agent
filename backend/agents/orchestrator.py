@@ -28,6 +28,7 @@ import llm
 from agents import composer, critic, feedback, intake, research
 from agents.composer import Constraints
 from schemas import SessionState, TraceStep
+import tools
 from tools import resolve_city
 
 MAX_REPAIRS = 5
@@ -189,11 +190,27 @@ class Session:
                       and a["name"] not in current and a["name"] not in c.excluded]
             if len(unused) < 2:  # not enough left to add: go find more
                 research.search_more(s.spec, s.research, MORE_QUERIES.get(tag, f"{tag}s"), self.log)
+        for act in ops.get("activities", []):
+            planned = next(((d, it) for d in s.plan.days for it in d.items if it.get("activity") == act), None)
+            if act in s.spec.activities and planned:
+                d, it = planned
+                notes.append(f"{act.capitalize()} is already in your plan: {it['name']} on {d.date:%a %b %d} "
+                             f"at {it['start']}. Want a different place or day? Tell me which.")
+                continue
+            if act not in s.spec.activities:
+                s.spec.activities = s.spec.activities + [act]
+            found = s.research.get(f"activity:{act}") or research.search_activity(s.spec, s.research, act, self.log)
+            if found:
+                moves.append(f"add {act}: {found[0]['name']} ({found[0]['km_from_city']} km)")
+            else:
+                radius = tools.D.ACTIVITIES[act][1]
+                notes.append(f"I couldn't find anywhere for {act} within {radius} km of {s.spec.destination}.")
         for name in ops.get("add_places", []):
             hit = _match(name, [a["name"] for a in _candidates(s.research)])
             if not hit:
-                found = research.search_more(s.spec, s.research, name, self.log, limit=1)
-                hit = found[0]["name"] if found else None
+                found = research.search_more(s.spec, s.research, name, self.log, limit=3)
+                # Only accept a result that is actually the place they named, never a random nearby one.
+                hit = _match(name, [a["name"] for a in found])
             if hit:
                 c.must_include.add(hit)
                 c.excluded.discard(hit)
@@ -286,9 +303,12 @@ def _candidates(research_results: dict) -> list[dict]:
 
 
 def _match(name: str, options: list[str]):
+    """The option that is the place the traveler named: exact, contained, or all its key words present."""
     n = name.lower().strip()
+    words = lambda x: set(re.findall(r"[a-z0-9]+", x.lower())) - {"the", "a", "of", "at", "in", "and", "park", "museum"}
     return next((o for o in options if n == o.lower()), None) or \
-        next((o for o in options if n in o.lower() or o.lower() in n), None)
+        next((o for o in options if n in o.lower() or o.lower() in n), None) or \
+        next((o for o in options if words(name) and words(name) <= words(o)), None)
 
 
 SESSIONS: dict[str, Session] = {}

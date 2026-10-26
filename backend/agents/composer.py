@@ -68,6 +68,7 @@ def pick_hotel(hotels: list, spec: TripSpec, c: Constraints) -> Optional[dict]:
     return max(pool, key=lambda h: (h.get("rating") or 0, -h["nightly_price"]))
 
 
+CAR_ACTIVITIES = {"skiing", "hiking", "snow tubing", "kayaking", "beach", "golf"}
 PACE_END = {"relaxed": "17:00", "normal": "18:30", "packed": "20:00"}
 PACE_START = {"relaxed": "10:00", "normal": "09:30", "packed": "08:30"}
 
@@ -87,6 +88,8 @@ def _leg(a: Optional[dict], b: dict) -> Optional[dict]:
     if not a or a.get("lat") is None or b.get("lat") is None:
         return None
     km = _haversine_km(a, b) * 1.3
+    if km > 25:  # out of town (ski areas, state parks): you'll need a car
+        return {"mode": "drive", "km": round(km), "minutes": round((10 + km / 60 * 60) / 5) * 5}
     if km <= 1.6:
         return {"mode": "walk", "km": round(km, 1), "minutes": max(5, round(km / 4.8 * 60 / 5) * 5)}
     return {"mode": "transit", "km": round(km, 1), "minutes": round((10 + km / 24 * 60) / 5) * 5}
@@ -198,6 +201,18 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     base = plan.hotel if plan.hotel and plan.hotel.get("lat") is not None else \
         {"name": "city centre", "lat": city.get("lat"), "lng": city.get("lng")}
     used: set[str] = set()
+    # Activities the traveler asked for get a day of their own choosing: a full day if possible
+    # (skiing: the coldest one), and the best-rated nearby place.
+    activity_day: dict[int, dict] = {}
+    for act in spec.activities:
+        options = [a for a in research.get(f"activity:{act}") or [] if a["name"] not in c.excluded]
+        if not options:
+            continue
+        full = [j for j in range(days_n) if days_n == 1 or 0 < j < days_n - 1] or list(range(days_n))
+        free = [j for j in full if j not in activity_day] or full
+        if "winter" in options[0].get("tags", []):
+            free.sort(key=lambda j: (weather.get((spec.start_date + timedelta(days=j)).isoformat()) or {}).get("high_c", 0))
+        activity_day[free[0]] = options[0]
     for i in range(days_n):
         day = spec.start_date + timedelta(days=i)
         w = weather.get(day.isoformat())
@@ -289,6 +304,27 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                                  "url": best.get("url"), "source": best.get("source")})
                 clock, pos, last_sight = arrive + dur, best, best["name"]
 
+        if i in activity_day:  # the thing they asked for comes first, at the start of the day
+            a = activity_day[i]
+            leg = _leg(pos, a) or {"minutes": 30, "mode": "drive", "km": a.get("km_from_city")}
+            if a.get("activity") in CAR_ACTIVITIES and leg["mode"] != "drive":  # no bus goes up the ski hill
+                leg = {"mode": "drive", "km": leg["km"], "minutes": round((10 + leg["km"] / 50 * 60) / 5) * 5}
+            arrive, dur = max(clock, _hm("09:00")) + leg["minutes"], a.get("hours", 3) * 60
+            used.add(a["name"])
+            dp.items.append({"kind": "attraction", "name": a["name"], "start": _fmt(arrive), "end": _fmt(arrive + dur),
+                             "hours": a.get("hours"), "indoor": a.get("indoor"), "lat": a.get("lat"), "lng": a.get("lng"),
+                             "travel": leg, "winter": "winter" in a.get("tags", []), "activity": a.get("activity"),
+                             "why": f"You asked for {a['activity']}" + (f"; {a['km_from_city']} km out of town, by car"
+                                                                        if (a.get("km_from_city") or 0) > 25 else "")
+                                    + ("; lift ticket + rentals est." if a.get("activity") == "skiing" else "")
+                                    + ("; rain is typical that day, check conditions before you go"
+                                       if cond["label"] == "rainy" and "winter" in a.get("tags", []) else ""),
+                             "cost": (a.get("cost_per_person") or 0) * travelers, "cost_estimated": True,
+                             "url": a.get("url"), "source": a.get("source")})
+            clock, pos, last_sight = arrive + dur, a, a["name"]
+            if not lunch_done and arrive < _hm("12:30") < clock:
+                lunch_done = True
+                dp.items[-1]["why"] += "; lunch there"
         if daytime and clock <= _hm(daytime["time"]):
             ev = _hm(daytime["time"])
             fill(ev - 30)  # sights before the event, leaving time to get there
