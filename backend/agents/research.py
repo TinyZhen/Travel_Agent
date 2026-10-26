@@ -7,11 +7,13 @@ guardrail re-runs any essential tool the plan cannot do without.
 from __future__ import annotations
 
 import json
+import re
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 import llm
 import tools
+from tools import _haversine_km
 from schemas import TraceStep, TripSpec
 
 MAX_STEPS = 8
@@ -79,7 +81,24 @@ def run(spec: TripSpec, log: Callable[[TraceStep], None]) -> dict:
     if missing and llm.available():
         log(TraceStep(agent="Research", action="guardrail", detail=f"required but skipped: {', '.join(missing)}"))
     _call_many([(n, _default_args(n, spec)) for n in missing], results, log)
+    _seasonal_extras(spec, results, log)
     return results
+
+
+def _seasonal_extras(spec: TripSpec, results: dict, log: Callable[[TraceStep], None]) -> None:
+    """Cold trip? Look for indoor options and winter-only things instead of planning around parks."""
+    weather = [w for w in results.get("get_weather") or [] if isinstance(w, dict) and "high_c" in w]
+    if not weather or not any(w["high_c"] <= 5 or (w.get("snow_cm") or 0) >= 1 for w in weather):
+        return
+    lows = min(w["high_c"] for w in weather)
+    log(TraceStep(agent="Research", action="season check",
+                  detail=f"cold trip (highs down to {lows}°C, {weather[0].get('source')}): looking for indoor and winter options"))
+    queries = ["indoor attractions"]
+    if spec.start_date.month == 12 or (spec.start_date.month == 11 and spec.start_date.day >= 15):
+        queries.append("holiday markets")
+    queries.append("ice skating")
+    for q in queries:
+        search_more(spec, results, q, log)
 
 
 def _llm_loop(spec: TripSpec, results: dict, log: Callable[[TraceStep], None]) -> None:
@@ -112,14 +131,29 @@ def _llm_loop(spec: TripSpec, results: dict, log: Callable[[TraceStep], None]) -
             return
 
 
+def _same_place(a: dict, b: dict) -> bool:
+    """'Eastern Market Shed 5' and 'Eastern Market' are one stop, not two."""
+    if a["name"] == b["name"]:
+        return True
+    words = lambda n: {w for w in re.findall(r"[a-z]+", n.lower()) if len(w) > 3 and w not in
+                       {"museum", "park", "the", "center", "centre", "market", "detroit", "city", "national"}}
+    shared = words(a["name"]) & words(b["name"])
+    close = a.get("lat") is not None and b.get("lat") is not None and _haversine_km(a, b) < 0.4
+    return (close and bool(shared)) or (close and _haversine_km(a, b) < 0.08) or len(shared) >= 2
+
+
 def search_more(spec: TripSpec, results: dict, query: str, log: Callable[[TraceStep], None],
                 limit: int = 6) -> list[dict]:
     """Targeted follow-up search when the traveler asks for more of something (or a specific place).
     New places are merged into the existing research results; returns only the new ones."""
     found = _execute("search_attractions", {"destination": spec.destination,
                                             "interests": spec.interests, "query": query})
-    known = {a.get("name") for a in results.get("search_attractions") or []}
-    new = [a for a in found if isinstance(a, dict) and a.get("name") and a["name"] not in known][:limit]
+    existing = [a for a in results.get("search_attractions") or [] if isinstance(a, dict) and a.get("name")]
+    new = []
+    for a in found:
+        if isinstance(a, dict) and a.get("name") and not any(_same_place(a, b) for b in existing + new):
+            new.append(a)
+    new = new[:limit]
     results.setdefault("search_attractions", []).extend(new)
     src = sorted({a.get("source") for a in new}) or ["nothing new"]
     log(TraceStep(agent="Research", action=f"search more: {query}", detail=f"{len(new)} new places ({', '.join(src)})"))

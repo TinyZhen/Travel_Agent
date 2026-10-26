@@ -31,6 +31,12 @@ class DayPlan(BaseModel):
     date: date
     weather: Optional[str] = None
     rain_chance: Optional[int] = None
+    high_c: Optional[float] = None
+    low_c: Optional[float] = None
+    snow_cm: Optional[float] = None
+    sunset: Optional[str] = None
+    condition: Optional[str] = None       # freezing | snowy | cold | rainy | hot
+    weather_basis: Optional[str] = None   # forecast, typical for these dates, or estimate
     items: list[dict[str, Any]] = Field(default_factory=list)
 
 

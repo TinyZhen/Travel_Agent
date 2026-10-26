@@ -22,7 +22,8 @@ exhibitions: [{{"title": ..., "dates": ..., "url": ...}}] — ONLY exhibitions t
   below and are plausibly on view on {visit_date}; copy the url from the result; [] if none or no results,
 plan: [{{"minutes": int, "what": ...}}] — how to spend exactly {minutes} minutes there, in order; minutes must sum to {minutes},
 tips: 2-3 short practical tips (tickets/entry, timing, where to start). Tips must agree with the plan.
-Traveler interests: {interests}. Visit: {visit_date}, {start}–{end}.
+Traveler interests: {interests}. Visit: {visit_date}, {start}–{end}. Weather that day: {weather}.
+Make the plan and tips fit that weather (cold, snow, rain, heat, early sunset).
 Never invent exhibitions. If unsure about a detail, leave it out."""
 
 
@@ -40,8 +41,8 @@ def _exhibition_results(name: str, city: str, when: date) -> list[dict]:
     return out
 
 
-def guide_for(place: dict, item: dict, spec, visit_date: date) -> dict:
-    key = f"{place.get('name')}|{visit_date:%Y-%m}|{item.get('start')}-{item.get('end')}|{','.join(spec.interests)}"
+def guide_for(place: dict, item: dict, spec, visit_date: date, weather: str = "unknown") -> dict:
+    key = f"{place.get('name')}|{visit_date:%Y-%m}|{item.get('start')}-{item.get('end')}|{','.join(spec.interests)}|{weather}"
     if key in _CACHE:
         return _CACHE[key]
     if not llm.available():
@@ -53,7 +54,7 @@ def guide_for(place: dict, item: dict, spec, visit_date: date) -> dict:
     try:
         data = llm.chat_json(SYSTEM.format(visit_date=visit_date.isoformat(), minutes=minutes,
                                            interests=", ".join(spec.interests) or "general",
-                                           start=item.get("start"), end=item.get("end")),
+                                           start=item.get("start"), end=item.get("end"), weather=weather),
                              f"Stop: {place['name']} in {spec.destination}\nSearch results:\n{context}",
                              max_tokens=2500)
     except Exception as e:
@@ -68,11 +69,11 @@ def guide_for(place: dict, item: dict, spec, visit_date: date) -> dict:
     return data
 
 
-def find_stop(plan, research: dict, name: str) -> Optional[tuple[dict, dict, date]]:
+def find_stop(plan, research: dict, name: str) -> Optional[tuple[dict, dict, object]]:
     for d in plan.days:
         for it in d.items:
             if it["kind"] == "attraction" and it["name"] == name:
                 place = next((a for a in research.get("search_attractions") or []
                               if isinstance(a, dict) and a.get("name") == name), {"name": name})
-                return place, it, d.date
+                return place, it, d
     return None

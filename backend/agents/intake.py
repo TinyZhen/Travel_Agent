@@ -8,7 +8,7 @@ from typing import Optional
 
 import llm
 from schemas import TripSpec
-from tools import drive_hours, resolve_city
+from tools import drive_hours, resolve_city, us_state
 from fixtures.demo_data import CITIES, CITY_ALIASES
 
 MONTHS = {m: i for i, m in enumerate(
@@ -180,8 +180,12 @@ def validate(spec: TripSpec, today: Optional[date] = None) -> list[str]:
         qs.append("Where are you leaving from?")
     elif not resolve_city(spec.origin):
         qs.append(f"I couldn't find \"{spec.origin}\". Which city are you leaving from?")
+    state = us_state(spec.destination or "") if spec.destination and not resolve_city(spec.destination) else None
     if not spec.destination:
         qs.append("Where would you like to go?")
+    elif state:
+        hint = f" (e.g. {', '.join(state[1])})" if state[1] else ""
+        qs.append(f"{state[0]} is a state. Which city would you like to visit{hint}?")
     elif not resolve_city(spec.destination):
         qs.append(f"I couldn't find \"{spec.destination}\". Which city do you mean?")
     if not spec.start_date:

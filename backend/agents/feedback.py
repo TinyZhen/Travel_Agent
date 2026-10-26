@@ -19,7 +19,8 @@ SYSTEM = """You are the Feedback agent of a travel planner. The traveler is reac
 Return JSON with these keys (omit ones that don't apply):
 approve (bool), cheaper (bool: ONLY if they ask to reduce cost, e.g. "cheaper", "too expensive";
 stating or raising a budget such as "budget is $1400" is NOT cheaper), different_hotel (bool), different_flight (bool), upgrade_hotel (bool),
-more (list of tags they want MORE of), less (list of tags they want LESS of),
+more (list of tags they want MORE of; only the kinds they actually named, e.g. "more museums" -> ["museum"]),
+less (list of tags they want LESS of),
 pace ("relaxed" | "packed" | "normal"),
 add_places (list of specific named places they want added),
 remove_places (list of names, copied exactly from the plan, that they want removed).

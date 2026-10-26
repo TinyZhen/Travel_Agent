@@ -13,3 +13,8 @@ node_modules/
 dist/
 .DS_Store
 *.log
+
+# team drafts and the in-progress report live outside the repo
+*.docx
+docs/*_Script.md
+docs/Poster_*.md

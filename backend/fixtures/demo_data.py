@@ -5,21 +5,43 @@ are illustrative samples and are labelled `"source": "demo"` everywhere.
 """
 
 CITIES = {
-    "new york": {"name": "New York", "iata": "JFK", "city_code": "NYC", "lat": 40.7128, "lng": -74.0060},
-    "chicago": {"name": "Chicago", "iata": "ORD", "city_code": "CHI", "lat": 41.8781, "lng": -87.6298},
-    "washington": {"name": "Washington DC", "iata": "DCA", "city_code": "WAS", "lat": 38.9072, "lng": -77.0369},
-    "montreal": {"name": "Montreal", "iata": "YUL", "city_code": "YMQ", "lat": 45.5019, "lng": -73.5674},
-    "san francisco": {"name": "San Francisco", "iata": "SFO", "city_code": "SFO", "lat": 37.7749, "lng": -122.4194},
-    "boston": {"name": "Boston", "iata": "BOS", "city_code": "BOS", "lat": 42.3601, "lng": -71.0589},
-    "philadelphia": {"name": "Philadelphia", "iata": "PHL", "city_code": "PHL", "lat": 39.9526, "lng": -75.1652},
+    "new york": {"name": "New York", "iata": "JFK", "city_code": "NYC", "lat": 40.7128, "lng": -74.0060, "tz": "America/New_York"},
+    "chicago": {"name": "Chicago", "iata": "ORD", "city_code": "CHI", "lat": 41.8781, "lng": -87.6298, "tz": "America/Chicago"},
+    "washington": {"name": "Washington DC", "iata": "DCA", "city_code": "WAS", "lat": 38.9072, "lng": -77.0369, "tz": "America/New_York"},
+    "montreal": {"name": "Montreal", "iata": "YUL", "city_code": "YMQ", "lat": 45.5019, "lng": -73.5674, "tz": "America/Toronto"},
+    "san francisco": {"name": "San Francisco", "iata": "SFO", "city_code": "SFO", "lat": 37.7749, "lng": -122.4194, "tz": "America/Los_Angeles"},
+    "boston": {"name": "Boston", "iata": "BOS", "city_code": "BOS", "lat": 42.3601, "lng": -71.0589, "tz": "America/New_York"},
+    "detroit": {"name": "Detroit", "iata": "DTW", "city_code": "DTT", "lat": 42.3314, "lng": -83.0458, "tz": "America/Detroit"},
+    "philadelphia": {"name": "Philadelphia", "iata": "PHL", "city_code": "PHL", "lat": 39.9526, "lng": -75.1652, "tz": "America/New_York"},
 }
 
 CITY_ALIASES = {
     "nyc": "new york", "new york city": "new york", "manhattan": "new york",
     "dc": "washington", "washington dc": "washington", "washington d.c.": "washington",
     "sf": "san francisco", "bay area": "san francisco", "philly": "philadelphia",
-    "chi": "chicago",
+    "chi": "chicago", "motor city": "detroit",
 }
+
+# A US state is not a destination we can plan; ask which city (with a few suggestions).
+US_STATES = {
+    "alabama": [], "alaska": ["Anchorage"], "arizona": ["Phoenix", "Sedona", "Tucson"], "arkansas": [],
+    "california": ["San Francisco", "Los Angeles", "San Diego"], "colorado": ["Denver", "Boulder"],
+    "connecticut": ["New Haven", "Hartford"], "delaware": [], "florida": ["Miami", "Orlando", "Tampa"],
+    "georgia": ["Atlanta", "Savannah"], "hawaii": ["Honolulu"], "idaho": [], "illinois": ["Chicago"],
+    "indiana": ["Indianapolis"], "iowa": [], "kansas": [], "kentucky": ["Louisville"], "louisiana": ["New Orleans"],
+    "maine": ["Portland, ME"], "maryland": ["Baltimore"], "massachusetts": ["Boston", "Salem"],
+    "michigan": ["Detroit", "Ann Arbor", "Grand Rapids"], "minnesota": ["Minneapolis"], "mississippi": [],
+    "missouri": ["St. Louis", "Kansas City"], "montana": [], "nebraska": [], "nevada": ["Las Vegas"],
+    "new hampshire": [], "new jersey": [], "new mexico": ["Santa Fe"], "north carolina": ["Charlotte", "Asheville"],
+    "north dakota": [], "ohio": ["Cleveland", "Columbus"], "oklahoma": [], "oregon": ["Portland"],
+    "pennsylvania": ["Philadelphia", "Pittsburgh"], "rhode island": ["Providence"], "south carolina": ["Charleston"],
+    "south dakota": [], "tennessee": ["Nashville", "Memphis"], "texas": ["Austin", "Houston", "San Antonio"],
+    "utah": ["Salt Lake City"], "vermont": ["Burlington"], "virginia": ["Richmond"], "washington state": ["Seattle"],
+    "west virginia": [], "wisconsin": ["Milwaukee", "Madison"], "wyoming": [],
+}
+
+# Attractions that only operate in some months (first, last month).
+SEASONAL = {"Chicago Architecture River Cruise": (4, 11), "Campus Martius Park ice rink": (11, 3)}
 
 # name, lat, lng, tags, indoor, cost per person (USD), hours
 ATTRACTIONS = {
@@ -72,6 +94,16 @@ ATTRACTIONS = {
         ("New England Aquarium", 42.3591, -71.0493, ["family", "nature"], True, 38, 2),
         ("Faneuil Hall Marketplace", 42.3600, -71.0568, ["food", "shopping", "history"], True, 15, 1.5),
         ("Boston Public Garden", 42.3541, -71.0702, ["nature", "outdoors"], False, 0, 1),
+    ],
+    "detroit": [
+        ("Detroit Institute of Arts", 42.3594, -83.0645, ["museum", "art"], True, 20, 2.5),
+        ("The Henry Ford Museum of American Innovation", 42.3036, -83.2336, ["museum", "history", "science"], True, 32, 3),
+        ("Motown Museum", 42.3640, -83.0884, ["museum", "music", "history"], True, 20, 1.5),
+        ("Guardian Building", 42.3297, -83.0459, ["architecture", "history"], True, 0, 1),
+        ("Eastern Market", 42.3471, -83.0410, ["food", "shopping"], False, 15, 1.5),
+        ("Campus Martius Park ice rink", 42.3317, -83.0466, ["outdoors", "family", "winter"], False, 15, 1.5),
+        ("Detroit Riverwalk", 42.3293, -83.0398, ["outdoors", "nature"], False, 0, 1.5),
+        ("Belle Isle Conservatory & Aquarium", 42.3388, -82.9861, ["nature", "family"], True, 0, 2),
     ],
     "philadelphia": [
         ("Independence Hall & Liberty Bell", 39.9489, -75.1500, ["history", "landmark"], True, 0, 2),

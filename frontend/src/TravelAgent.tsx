@@ -24,7 +24,7 @@ async function api(path: string, init: RequestInit = {}, retry = true): Promise<
 }
 
 type Item = { kind: string; name: string; start?: string; end?: string; hours?: number; cost?: number; price_unknown?: boolean; cost_estimated?: boolean; indoor?: boolean; lat?: number; lng?: number; source?: string; url?: string; why?: string; travel?: { mode: string; minutes: number; km: number } | null };
-type Day = { date: string; weather?: string; rain_chance?: number; items: Item[] };
+type Day = { date: string; weather?: string; rain_chance?: number; sunset?: string; condition?: string; weather_basis?: string; items: Item[] };
 type State = {
     session_id: string;
     status: "needs_clarification" | "awaiting_approval" | "approved" | "error";
@@ -278,6 +278,8 @@ function PlanView({ state }: { state: State }) {
     );
 }
 
+const CONDITION_ICON: Record<string, string> = { freezing: "🥶 ", snowy: "❄️ ", cold: "🧥 ", rainy: "☔ ", hot: "☀️ " };
+
 const KIND_ICON: Record<string, string> = {
     arrival: "✈️", departure: "✈️", hotel: "🏨", meal: "🍽️", event: "🎟️", attraction: "📍", free: "☕",
 };
@@ -296,9 +298,11 @@ function DayCard({ day: d, index: i, active, changes, onFocus, sessionId }: {
                     <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: color }} />
                     Day {i + 1} · {new Date(d.date + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
                 </h3>
-                <span className="text-xs text-stone-500">
-                    {d.weather && <span className={(d.rain_chance ?? 0) >= 60 ? "font-medium text-sky-700" : ""}>{(d.rain_chance ?? 0) >= 60 ? "☔ " : ""}{d.weather} · </span>}
-                    activities {money(dayCost)}
+                <span className="text-right text-xs text-stone-500">
+                    {d.weather && <span className={d.condition ? "font-medium text-sky-800" : ""}>{CONDITION_ICON[d.condition ?? ""] ?? ""}{d.weather}</span>}
+                    {d.sunset && <span> · sunset {d.sunset}</span>}
+                    <span> · activities {money(dayCost)}</span>
+                    {d.weather_basis && <span className="block text-[11px] text-stone-400">weather: {d.weather_basis}</span>}
                 </span>
             </button>
             <ol className="relative ml-[58px] border-l border-stone-200">

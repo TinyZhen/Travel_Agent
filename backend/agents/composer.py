@@ -35,6 +35,7 @@ class Constraints:
         self.previous: set[str] = set()       # items of the plan being revised (keep edits minimal)
         self.sticky = 0.6                     # how strongly to keep previous items
         self.demote: set[str] = set()         # previous items we chose to drop to make room
+        self.weather_strict = False           # Critic: bad-weather days must avoid outdoor stops
 
 
 def _ok(rows) -> list:
@@ -91,31 +92,68 @@ def _leg(a: Optional[dict], b: dict) -> Optional[dict]:
     return {"mode": "transit", "km": round(km, 1), "minutes": round((10 + km / 24 * 60) / 5) * 5}
 
 
-def _score(a: dict, c: Constraints, rainy: bool) -> float:
+def conditions(w: Optional[dict]) -> dict:
+    """What the day's weather means for planning."""
+    if not w:
+        return {"label": None, "bad": False, "cold": False}
+    hi, rain, snow = w.get("high_c", 15), w.get("rain_chance") or 0, w.get("snow_cm") or 0
+    snowy = snow >= 1 or (rain >= 60 and hi <= 2)
+    label = ("freezing" if hi <= -3 else "snowy" if snowy else "cold" if hi <= 5
+             else "rainy" if rain >= 60 else "hot" if hi >= 32 else None)
+    return {"label": label, "bad": label is not None, "cold": label in ("freezing", "snowy", "cold"),
+            "sunset": _hm(w["sunset"]) if w.get("sunset") else None}
+OUTDOOR_PENALTY = {"freezing": 4, "snowy": 3, "cold": 2, "rainy": 1.5, "hot": 1}
+
+
+def _in_season(a: dict, month: int) -> bool:
+    if not a.get("months"):
+        return True
+    first, last = a["months"]
+    return first <= month <= last if first <= last else (month >= first or month <= last)
+
+
+def _score(a: dict, c: Constraints, cond: dict) -> float:
     s = a.get("match", 0) + sum(c.boost.get(t, 0) for t in a.get("tags", []))
     if a["name"] in c.demote:
         s -= 5
     elif a["name"] in c.previous:
         s += c.sticky                               # keep revisions minimal
     s += 10 if a["name"] in c.must_include else 0
-    if rainy:
-        s += 1.5 if a.get("indoor") else -1.5
+    winter = "winter" in a.get("tags", [])
+    if winter:
+        s += 1.5 if cond["cold"] else -3
+    elif cond["bad"]:
+        s += 1.5 if a.get("indoor") else -OUTDOOR_PENALTY[cond["label"]] * (4 if c.weather_strict else 1)
     return s
 
 
-def _why(a: dict, spec: TripSpec, c: Constraints, rainy: bool) -> str:
+def _why(a: dict, spec: TripSpec, c: Constraints, cond: dict) -> str:
     if a["name"] in c.must_include:
         return "You asked for this"
     hits = [t for t in a.get("tags", []) if t in spec.interests or c.boost.get(t, 0) > 0]
     parts = [f"Matches your interest in {hits[0]}"] if hits else []
-    if rainy and a.get("indoor"):
-        parts.append("indoor pick for a rainy day")
+    if "winter" in a.get("tags", []) and cond["cold"]:
+        parts.append("a cold-weather classic")
+    elif cond["bad"] and a.get("indoor"):
+        parts.append(f"indoor pick for a {cond['label']} day")
     if not a.get("cost_per_person"):
         parts.append("free")
     return "; ".join(parts) or ", ".join(a.get("tags", [])[:2]).capitalize()
 
 
-def _fill_gaps(items: list[dict]) -> list[dict]:
+def _describe(w: Optional[dict]) -> Optional[str]:
+    if not w:
+        return None
+    s = f"high {w['high_c']}°C / low {w.get('low_c', w['high_c'] - 8)}°C"
+    if (w.get("snow_cm") or 0) >= 0.5:
+        s += f", snow {w['snow_cm']:g} cm"
+    rain = w.get("rain_chance") or 0
+    if rain:
+        s += f", {rain}% chance of {'precipitation' if w['high_c'] <= 2 else 'rain'}"
+    return s
+
+
+def _fill_gaps(items: list[dict], cond: Optional[dict] = None) -> list[dict]:
     """Make long idle stretches explicit instead of leaving silent holes in the day."""
     out = []
     for it in items:
@@ -124,7 +162,9 @@ def _fill_gaps(items: list[dict]) -> list[dict]:
             gap_end = _hm(it["start"]) - ((it.get("travel") or {}).get("minutes") or 0)
             if gap_end - gap_start >= 90:
                 near = next((x["name"] for x in reversed(out) if x["kind"] == "attraction"), None)
-                out.append({"kind": "free", "name": f"Free time{' around ' + near if near else ''}",
+                warm = cond and cond.get("cold")
+                out.append({"kind": "free", "name": ("Warm up indoors: café or shops" if warm else "Free time")
+                            + (f" near {near}" if near else ""),
                             "start": _fmt(gap_start), "end": _fmt(gap_end)})
         out.append(it)
     return out
@@ -161,9 +201,11 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     for i in range(days_n):
         day = spec.start_date + timedelta(days=i)
         w = weather.get(day.isoformat())
-        rainy = bool(w and (w.get("rain_chance") or 0) >= 60)
-        dp = DayPlan(date=day, weather=(f"{w['high_c']}°C, {w['rain_chance']}% rain" if w else None),
-                     rain_chance=w.get("rain_chance") if w else None)
+        cond = conditions(w)
+        dp = DayPlan(date=day, weather=_describe(w), rain_chance=w.get("rain_chance") if w else None,
+                     high_c=w.get("high_c") if w else None, low_c=w.get("low_c") if w else None,
+                     snow_cm=w.get("snow_cm") if w else None, sunset=w.get("sunset") if w else None,
+                     condition=cond["label"], weather_basis=w.get("source") if w else None)
         clock, end = _hm(PACE_START[c.pace]), _hm(PACE_END[c.pace])
 
         # ---- arrival / departure logistics
@@ -192,16 +234,6 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
         event = next((e for e in events if e["date"] == day.isoformat() and e["name"] not in used
                       and (not interests or interests & set(e.get("tags", [])))), None)
         daytime = event if event and event.get("time") and _hm(event["time"]) < _hm("17:00") else None
-        if daytime and clock <= _hm(daytime["time"]):
-            used.add(daytime["name"])
-            clock = _hm(daytime["time"])
-            dp.items.append({"kind": "event", "name": daytime["name"], "start": daytime["time"],
-                             "end": _fmt(clock + 120), "why": "Daytime event matching your interests"
-                             if interests & set(daytime.get("tags", [])) else "Daytime event",
-                             "cost": (daytime.get("price_per_person") or 0) * travelers,
-                             "price_unknown": daytime.get("price_per_person") is None,
-                             "url": daytime.get("url"), "source": daytime.get("source")})
-            clock += 120
         if daytime:
             event = next((e for e in events if e["date"] == day.isoformat() and e["name"] not in used
                           and e.get("time") and _hm(e["time"]) >= _hm("17:00")
@@ -211,33 +243,64 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
 
         # ---- sights: greedy best-next (interest score minus travel time), lunch once it's past noon
         pos, lunch_done, last_sight = base, clock >= _hm("14:00"), None
-        while True:
-            if not lunch_done and clock >= _hm("12:00"):
-                dp.items.append({"kind": "meal", "name": f"Lunch near {last_sight or base['name']}",
-                                 "start": _fmt(clock), "end": _fmt(clock + 60), "cost": 0})
-                clock, lunch_done = clock + 60, True
-            best, best_val = None, None
-            for a in attractions:
-                if a["name"] in used:
-                    continue
-                leg = _leg(pos, a) or {"minutes": 20}
-                if clock + leg["minutes"] + a.get("hours", 2) * 60 > end:
-                    continue  # doesn't fit today; maybe a shorter one does
-                val = _score(a, c, rainy) * 10 - leg["minutes"] * 0.25
-                if best_val is None or val > best_val:
-                    best, best_val = a, val
-            if not best:
-                break
-            leg = _leg(pos, best) or {"minutes": 20}
-            arrive, dur = clock + leg["minutes"], best.get("hours", 2) * 60
-            used.add(best["name"])
-            dp.items.append({"kind": "attraction", "name": best["name"], "start": _fmt(arrive), "end": _fmt(arrive + dur),
-                             "hours": best.get("hours", 2), "indoor": best.get("indoor"), "lat": best.get("lat"),
-                             "lng": best.get("lng"), "travel": _leg(pos, best), "why": _why(best, spec, c, rainy),
-                             "cost": (best.get("cost_per_person") or 0) * travelers,
-                             "cost_estimated": best.get("cost_estimated", False),
-                             "url": best.get("url"), "source": best.get("source")})
-            clock, pos, last_sight = arrive + dur, best, best["name"]
+
+        # Relaxed pace: at most 2 activities on a full day (events count), 1 on travel days.
+        n_events = int(bool(event)) + int(bool(daytime))
+        cap = None if c.pace != "relaxed" else max(0, (1 if i in (0, days_n - 1) and days_n > 1 else 2) - n_events)
+        slack = 30 if c.pace == "relaxed" else 0
+
+        def fill(limit: int) -> None:
+            nonlocal clock, pos, lunch_done, last_sight
+            while cap is None or sum(x["kind"] == "attraction" for x in dp.items) < cap:
+                if not lunch_done and clock >= _hm("12:00"):
+                    dp.items.append({"kind": "meal", "name": f"Lunch near {last_sight or base['name']}",
+                                     "start": _fmt(clock), "end": _fmt(clock + 60), "cost": 0})
+                    clock, lunch_done = clock + 60, True
+                best, best_val = None, None
+                for a in attractions:
+                    if a["name"] in used or not _in_season(a, day.month):
+                        continue
+                    leg = _leg(pos, a) or {"minutes": 20}
+                    finish = clock + leg["minutes"] + a.get("hours", 2) * 60
+                    if finish > limit:
+                        continue  # doesn't fit; maybe a shorter one does
+                    daylight_only = not a.get("indoor") and {"nature", "outdoors"} & set(a.get("tags", [])) \
+                        and "winter" not in a.get("tags", [])
+                    if daylight_only and cond.get("sunset") and finish > cond["sunset"] + 15:
+                        continue  # parks and walks after dark aren't a plan
+                    if c.weather_strict and cond["bad"] and not a.get("indoor") and "winter" not in a.get("tags", []) \
+                            and any(x["kind"] == "attraction" and not x.get("indoor") and not x.get("winter")
+                                    for x in dp.items):
+                        continue  # bad weather: at most one outdoor stop, keep the rest of the day light
+                    val = _score(a, c, cond) * 10 - leg["minutes"] * 0.25
+                    if best_val is None or val > best_val:
+                        best, best_val = a, val
+                if not best:
+                    return
+                leg = _leg(pos, best) or {"minutes": 20}
+                arrive, dur = clock + leg["minutes"] + slack, best.get("hours", 2) * 60
+                used.add(best["name"])
+                dp.items.append({"kind": "attraction", "name": best["name"], "start": _fmt(arrive),
+                                 "end": _fmt(arrive + dur), "hours": best.get("hours", 2), "indoor": best.get("indoor"),
+                                 "lat": best.get("lat"), "lng": best.get("lng"), "travel": _leg(pos, best),
+                                 "why": _why(best, spec, c, cond), "winter": "winter" in best.get("tags", []),
+                                 "cost": (best.get("cost_per_person") or 0) * travelers,
+                                 "cost_estimated": best.get("cost_estimated", False),
+                                 "url": best.get("url"), "source": best.get("source")})
+                clock, pos, last_sight = arrive + dur, best, best["name"]
+
+        if daytime and clock <= _hm(daytime["time"]):
+            ev = _hm(daytime["time"])
+            fill(ev - 30)  # sights before the event, leaving time to get there
+            used.add(daytime["name"])
+            dp.items.append({"kind": "event", "name": daytime["name"], "start": daytime["time"],
+                             "end": _fmt(ev + 120), "why": "Daytime event matching your interests"
+                             if interests & set(daytime.get("tags", [])) else "Daytime event",
+                             "cost": (daytime.get("price_per_person") or 0) * travelers,
+                             "price_unknown": daytime.get("price_per_person") is None,
+                             "url": daytime.get("url"), "source": daytime.get("source")})
+            clock = max(clock, ev) + 120
+        fill(end)
         if not lunch_done and clock > _hm("12:00") and clock < _hm("16:00"):
             dp.items.append({"kind": "meal", "name": f"Lunch near {last_sight or base['name']}",
                              "start": _fmt(clock), "end": _fmt(clock + 60), "cost": 0})
@@ -266,7 +329,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                 dp.items.append({"kind": "meal", "name": f"Dinner near {last_sight or base['name']}",
                                  "start": _fmt(max(clock + 30, _hm("19:00"))),
                                  "end": _fmt(max(clock + 30, _hm("19:00")) + 75), "cost": 0})
-        dp.items = _fill_gaps(dp.items)
+        dp.items = _fill_gaps(dp.items, cond)
         plan.days.append(dp)
 
     # ---- costs
@@ -300,10 +363,14 @@ def summarize(spec: TripSpec, plan: Plan, log=None) -> str:
         msg = llm.chat([
             {"role": "system", "content": "Write a warm 3-sentence trip summary. Use ONLY facts given; do not add places or prices."},
             {"role": "user", "content": fallback + "\nDay plan:\n" + "\n".join(
-                f"{d.date}: " + "; ".join(it["name"] for it in d.items if it["kind"] in ("attraction", "event"))
-                for d in plan.days)}],
+                f"{d.date} ({d.weather or 'weather unknown'}{', sunset ' + d.sunset if d.sunset else ''}): "
+                + "; ".join(it["name"] for it in d.items if it["kind"] in ("attraction", "event"))
+                for d in plan.days)
+             + "\nIf the weather is cold, snowy or wet, say so briefly and what to pack."}],
             temperature=0.5, max_tokens=250)
-        return (msg.content or fallback).strip()
+        if not msg.content:
+            raise ValueError("empty reply")
+        return msg.content.strip()
     except Exception as e:
         if log:
             log(TraceStep(agent="Composer", action="LLM summary failed, using template",

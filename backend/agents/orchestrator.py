@@ -134,6 +134,11 @@ class Session:
             qs.append("I couldn't find flights for that route/date. Try another date, or drive?")
         if any(i.startswith("no_hotel") for i in issues):
             qs.append("No hotel matched. Allow a higher hotel tier?")
+        rough = [d for d in s.plan.days if d.condition in ("freezing", "snowy", "cold")]
+        if rough and not qs:
+            coldest = min(rough, key=lambda d: d.high_c if d.high_c is not None else 99)
+            qs.append(f"Heads-up: expect {coldest.condition} weather (around {coldest.weather}, sunset {coldest.sunset}). "
+                      "I put indoor stops first and kept outdoor time short. Pack warm layers.")
         if any(i.startswith("empty") for i in issues):
             qs.append("I found no activities for this city. Want me to plan a different city?")
         return qs
@@ -241,7 +246,7 @@ class Session:
             self._plan(research_again=False, target=target)
         c.sticky, c.demote = 0.6, set()
         if wanted and not self._added_with_tag(current, wanted):
-            if all(m.startswith("more ") for m in moves) and not changed:
+            if all(m.startswith("more ") for m in moves) and changed <= {"interests"}:
                 s.plan = original  # nothing gained: don't leave the reshuffle behind
                 self.log(TraceStep(agent="Composer", action="kept plan", detail="no room gained; plan unchanged"))
             notes.append(f"I couldn't fit more {'/'.join(wanted)} in: every one I found in {s.spec.destination} "

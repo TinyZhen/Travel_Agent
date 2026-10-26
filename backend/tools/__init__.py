@@ -13,6 +13,7 @@ import re
 import zlib
 from datetime import date, datetime, timedelta
 from typing import Any, Optional
+from zoneinfo import ZoneInfo
 
 import requests
 from dotenv import load_dotenv
@@ -53,16 +54,25 @@ def resolve_city(name: str) -> Optional[dict]:
             return {**info, "key": k}
     if offline():
         return None
+    if key in D.US_STATES:
+        return None  # a state, not a city: Intake asks which city
     try:
         r = requests.get("https://geocoding-api.open-meteo.com/v1/search",
-                         params={"name": name, "count": 1}, timeout=TIMEOUT).json()
-        hit = (r.get("results") or [None])[0]
-        if hit:
-            return {"name": hit["name"], "lat": hit["latitude"], "lng": hit["longitude"],
-                    "iata": None, "city_code": None, "key": None, "drive_hours": None}
+                         params={"name": name, "count": 10}, timeout=TIMEOUT).json()
     except requests.RequestException:
-        pass
-    return None
+        return None
+    # Prefer real cities: populated places, largest first ("Michigan" is also a 348-person town in ND).
+    places = [h for h in r.get("results") or [] if str(h.get("feature_code", "")).startswith("PPL")]
+    hit = max(places, key=lambda h: h.get("population") or 0, default=None)
+    if not hit or (hit.get("population") or 0) < 10000:
+        return None
+    return {"name": hit["name"], "lat": hit["latitude"], "lng": hit["longitude"], "tz": hit.get("timezone"),
+            "region": hit.get("admin1"), "iata": None, "city_code": None, "key": None}
+
+
+def us_state(name: str) -> Optional[tuple[str, list[str]]]:
+    key = (name or "").strip().lower()
+    return (name.strip().title(), D.US_STATES[key]) if key in D.US_STATES else None
 
 
 def drive_hours(origin: str, destination: str) -> Optional[float]:
@@ -209,7 +219,7 @@ def search_attractions(destination: str, interests: Optional[list[str]] = None,
     curated = []
     for name, lat, lng, tags, indoor, cost, hours in rows:
         curated.append({"name": name, "lat": lat, "lng": lng, "tags": tags, "indoor": indoor,
-                        "cost_per_person": cost, "cost_estimated": True, "hours": hours,
+                        "months": D.SEASONAL.get(name), "cost_per_person": cost, "cost_estimated": True, "hours": hours,
                         "match": sum(1 for t in tags if t in interests), "source": "curated"})
     if query or not curated:
         live = _google_maps(c, query or "top sights", interests)
@@ -224,6 +234,9 @@ def search_attractions(destination: str, interests: Optional[list[str]] = None,
 
 
 PLACE_TAGS = [  # (keyword in Google's place type, tags, indoor, typical cost per person, hours)
+    ("skating", ["winter", "family", "outdoors"], False, 15, 1.5),
+    ("christmas", ["winter", "food", "shopping"], False, 0, 1.5),
+    ("holiday", ["winter", "food", "shopping"], False, 0, 1.5),
     ("museum", ["museum"], True, 25, 2.5), ("gallery", ["art", "museum"], True, 0, 1.5),
     ("art", ["art"], True, 20, 2), ("histor", ["history"], False, 0, 1.5), ("memorial", ["history"], False, 0, 1),
     ("monument", ["history", "landmark"], False, 0, 1), ("park", ["nature", "outdoors"], False, 0, 1.5),
@@ -238,7 +251,7 @@ PLACE_TAGS = [  # (keyword in Google's place type, tags, indoor, typical cost pe
 
 def _tags_for(text: str) -> list[str]:
     t = text.lower()
-    tags = [tag for kw, tags_, *_ in PLACE_TAGS if kw in t for tag in tags_]
+    tags = [tag for kw, tags_, *_ in PLACE_TAGS if re.search(rf"\b{kw}", t) for tag in tags_]
     return list(dict.fromkeys(tags)) or [t.rstrip("s")]
 
 
@@ -255,7 +268,7 @@ def _google_maps(c: dict, query: str, interests: list[str]) -> list[dict]:
         if _haversine_km(c, {"lat": gps["latitude"], "lng": gps["longitude"]}) > 15:
             continue
         kind = " ".join([r.get("type") or ""] + (r.get("types") or [])).lower()
-        hit = next((row for row in PLACE_TAGS if row[0] in kind), None)
+        hit = next((row for row in PLACE_TAGS if re.search(rf"\b{row[0]}", kind)), None)
         if not hit:
             continue  # unknown place type (venue, shop, office…): not a sight we can schedule reliably
         tags = _tags_for(kind)
@@ -380,29 +393,99 @@ def _ticketmaster(city: str, start: date, nights: int) -> list[dict]:
 
 
 # -------------------------------------------------------------------- weather
+def _sunset(c: dict, d: date) -> str:
+    """Local sunset time (NOAA solar approximation; good to a few minutes)."""
+    n = d.timetuple().tm_yday
+    g = 2 * math.pi / 365 * (n - 1)
+    eqt = 229.18 * (0.000075 + 0.001868 * math.cos(g) - 0.032077 * math.sin(g)
+                    - 0.014615 * math.cos(2 * g) - 0.040849 * math.sin(2 * g))
+    decl = (0.006918 - 0.399912 * math.cos(g) + 0.070257 * math.sin(g) - 0.006758 * math.cos(2 * g)
+            + 0.000907 * math.sin(2 * g) - 0.002697 * math.cos(3 * g) + 0.00148 * math.sin(3 * g))
+    lat = math.radians(c["lat"])
+    cos_ha = math.cos(math.radians(90.833)) / (math.cos(lat) * math.cos(decl)) - math.tan(lat) * math.tan(decl)
+    ha = math.degrees(math.acos(max(-1.0, min(1.0, cos_ha))))
+    utc_min = 720 - 4 * (c["lng"] - ha) - eqt
+    try:
+        offset = ZoneInfo(c.get("tz") or "UTC").utcoffset(datetime.combine(d, datetime.min.time())).total_seconds() / 60
+    except Exception:
+        offset = round(c["lng"] / 15) * 60
+    m = int(utc_min + offset) % 1440
+    return f"{m // 60:02d}:{m % 60:02d}"
+
+
+def _climate_estimate(c: dict, d: date) -> dict:
+    """Offline fallback: latitude-based seasonal curve (northern hemisphere), clearly labelled."""
+    lat = abs(c["lat"])
+    mean, amp = 33 - 0.45 * lat, max(3.0, 0.35 * lat - 2)
+    high = mean + amp * math.cos(2 * math.pi * (d.timetuple().tm_yday - 200) / 365)
+    s = _seed(c["name"], d)
+    return {"high_c": round(high), "low_c": round(high - 8), "rain_chance": (s % 6) * 10,
+            "snow_cm": round((s % 5) * 0.8, 1) if high <= 1 else 0.0}
+
+
 def get_weather(destination: str, start_date: str, nights: int = 2) -> list[dict]:
+    """Daily weather for the stay: live forecast within 15 days, otherwise what these dates were
+    actually like in the last 3 years (Open-Meteo archive), otherwise a labelled climate estimate."""
     c = resolve_city(destination)
     if not c:
         return [{"error": f"Unknown city: {destination}"}]
     start = _parse_date(start_date)
     days = [start + timedelta(days=i) for i in range(nights + 1)]
+    out = None
     if not offline() and (days[-1] - date.today()).days <= 15:
+        out = _forecast(c, days)
+    if out is None and not offline():
+        out = _typical(c, days)
+    if out is None:
+        out = [{"date": d.isoformat(), **_climate_estimate(c, d), "source": "climate-estimate"} for d in days]
+    for w in out:
+        w["sunset"] = _sunset(c, _parse_date(w["date"]))
+    return out
+
+
+def _forecast(c: dict, days: list[date]) -> Optional[list[dict]]:
+    try:
+        r = requests.get("https://api.open-meteo.com/v1/forecast", params={
+            "latitude": c["lat"], "longitude": c["lng"], "timezone": "auto",
+            "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max,snowfall_sum",
+            "start_date": days[0].isoformat(), "end_date": days[-1].isoformat()}, timeout=TIMEOUT).json()
+        dl = r["daily"]
+        return [{"date": d, "high_c": round(hi), "low_c": round(lo), "rain_chance": p or 0,
+                 "snow_cm": round(sn or 0, 1), "source": "open-meteo forecast"}
+                for d, hi, lo, p, sn in zip(dl["time"], dl["temperature_2m_max"], dl["temperature_2m_min"],
+                                            dl["precipitation_probability_max"], dl["snowfall_sum"])]
+    except (requests.RequestException, KeyError, ValueError, TypeError):
+        return None
+
+
+def _typical(c: dict, days: list[date]) -> Optional[list[dict]]:
+    """Same calendar dates in each of the last 3 years, averaged."""
+    years = [y for y in range(days[0].year - 3, days[0].year + 1)
+             if date(y, 12, 31) < date.today() or days[-1].replace(year=y) < date.today() - timedelta(days=6)][-3:]
+    rows: dict[str, list] = {d.isoformat(): [] for d in days}
+    for y in years:
         try:
-            r = requests.get("https://api.open-meteo.com/v1/forecast", params={
+            a, b = days[0].replace(year=y), days[-1].replace(year=y if days[-1].year == days[0].year else y + 1)
+            r = requests.get("https://archive-api.open-meteo.com/v1/archive", params={
                 "latitude": c["lat"], "longitude": c["lng"], "timezone": "auto",
-                "daily": "temperature_2m_max,precipitation_probability_max",
-                "start_date": days[0].isoformat(), "end_date": days[-1].isoformat()}, timeout=TIMEOUT).json()
-            daily = r["daily"]
-            return [{"date": d, "high_c": t, "rain_chance": p, "source": "open-meteo"}
-                    for d, t, p in zip(daily["time"], daily["temperature_2m_max"],
-                                       daily["precipitation_probability_max"])]
+                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum",
+                "start_date": a.isoformat(), "end_date": b.isoformat()}, timeout=TIMEOUT).json()
+            dl = r["daily"]
         except (requests.RequestException, KeyError, ValueError):
-            pass
+            continue
+        for i, d in enumerate(days):
+            if i < len(dl["time"]) and dl["temperature_2m_max"][i] is not None:
+                rows[d.isoformat()].append((dl["temperature_2m_max"][i], dl["temperature_2m_min"][i],
+                                            dl["precipitation_sum"][i] or 0, dl["snowfall_sum"][i] or 0))
+    if not all(rows.values()):
+        return None
     out = []
-    for d in days:
-        s = _seed(c["name"], d)
-        out.append({"date": d.isoformat(), "high_c": round(22 - abs(d.month - 7) * 3 + (s % 7) - 3),
-                    "rain_chance": (s % 10) * 10, "source": "seasonal-estimate"})
+    for d, rs in rows.items():
+        n = len(rs)
+        out.append({"date": d, "high_c": round(sum(r[0] for r in rs) / n), "low_c": round(sum(r[1] for r in rs) / n),
+                    "rain_chance": round(100 * sum(r[2] >= 1 for r in rs) / n),
+                    "snow_cm": round(sum(r[3] for r in rs) / n, 1),
+                    "source": f"typical for these dates ({years[0]}–{years[-1]})"})
     return out
 
 

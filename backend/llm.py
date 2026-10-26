@@ -38,6 +38,10 @@ def chat(messages: list[dict[str, Any]], tools: Optional[list[dict]] = None,
          temperature: float = 0.2, max_tokens: int = 1200):
     kwargs: dict[str, Any] = dict(model=DEFAULT_MODEL, messages=messages,
                                   temperature=temperature, max_tokens=max_tokens)
+    if os.getenv("LLM_REASONING", "off") == "off":
+        # Some models "think" by default on OpenRouter; that can spend the whole token budget
+        # before any answer is written (empty reply) and adds seconds to every step.
+        kwargs["extra_body"] = {"reasoning": {"enabled": False}}
     if tools:
         kwargs["tools"] = tools
     return client().chat.completions.create(**kwargs).choices[0].message
@@ -48,6 +52,8 @@ def chat_json(system: str, user: str, max_tokens: int = 1200) -> dict:
     msg = chat([{"role": "system", "content": system + "\nReply with a single JSON object only."},
                 {"role": "user", "content": user}], temperature=0, max_tokens=max_tokens)
     text = msg.content or ""
+    if not text:
+        raise ValueError("LLM returned an empty reply")
     match = re.search(r"\{.*\}", text, re.S)
     if not match:
         raise ValueError(f"LLM did not return JSON: {text[:200]}")

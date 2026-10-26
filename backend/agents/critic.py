@@ -32,15 +32,18 @@ def check(spec: TripSpec, plan: Plan, research: dict, budget: Optional[float] = 
     if plan.days and not names:
         issues.append("empty: no activities found")
     for d in plan.days:
-        if (d.rain_chance or 0) >= 60 and \
-                any(it["kind"] == "attraction" and not it.get("indoor") for it in d.items) and \
-                not any(it.get("indoor") for it in d.items):
-            issues.append(f"weather: {d.date} is rainy and has only outdoor plans")
+        outdoor = [it for it in d.items if it["kind"] == "attraction" and not it.get("indoor") and not it.get("winter")]
+        indoor = [it for it in d.items if it["kind"] == "attraction" and it.get("indoor")]
+        if d.condition and len(outdoor) >= 2:
+            issues.append(f"weather: {d.date} is {d.condition} but has {len(outdoor)} outdoor stop(s)")
     return issues
 
 
 def next_repair(issues: list[str], c: Constraints, plan: Plan) -> Optional[str]:
-    """Pick one cost-cutting move; None means we are out of safe automatic moves."""
+    """Pick one safe automatic fix; None means we are out of moves."""
+    if any(i.startswith("weather") for i in issues) and not c.weather_strict:
+        c.weather_strict = True
+        return "swap outdoor stops for indoor ones on bad-weather days"
     if not any(i.startswith("over_budget") for i in issues):
         return None
     tier = TIER_ORDER.index(plan.hotel.get("tier", "mid")) if plan.hotel else 0

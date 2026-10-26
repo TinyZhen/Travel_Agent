@@ -81,7 +81,8 @@ def guide(session_id: str, name: str):
     if not found:
         raise HTTPException(404, "That stop isn't in the current plan.")
     place, item, day = found
-    g = guide_agent.guide_for(place, item, sess.state.spec, day)
+    weather = f"{day.weather}, sunset {day.sunset}" if day.weather else "unknown"
+    g = guide_agent.guide_for(place, item, sess.state.spec, day.date, weather)
     if "error" not in g:
         sess.log(TraceStep(agent="Guide", action=f"guide for {name}",
                            detail=f"{len(g.get('exhibitions', []))} current exhibitions from "
