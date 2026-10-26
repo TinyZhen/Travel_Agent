@@ -1,0 +1,56 @@
+% Poster variant of the story strip: the same five beats, stacked, with larger type.
+% Alex is an illustration. The words and numbers are from one real run of the app
+% (docs/screenshots/03_over_budget_escalation.png: chat and agent trace).
+\documentclass[border=3pt]{standalone}
+\input{figstyle}
+\begin{document}
+\begin{tikzpicture}[x=1cm, y=1cm, font=\normalsize,
+  stepno/.style={circle, fill=primary, text=white, font=\normalsize\bfseries, inner sep=1.8pt, minimum size=6.5mm},
+  head/.style={anchor=west, font=\large\bfseries, text=ink, inner sep=0pt},
+  say/.style={saybubble, font=\normalsize},
+  app/.style={appbubble, font=\normalsize},
+  txt/.style={anchor=west, font=\normalsize, text=ink, inner sep=0pt},
+  note/.style={anchor=west, font=\small, text=muted, inner sep=0pt},
+  big/.style={anchor=west, font=\fontsize{20}{20}\selectfont\bfseries, inner sep=0pt},
+]
+  % ------------------------------------------------------------ 1
+  \node[stepno] at (0.3,0) {1}; \node[head] at (0.85,0) {Alex asks};
+  \node[note] at (4.0,0) {Alex, a student (an illustration)};
+  \node[anchor=west, inner sep=0pt, text=ink, font=\fontsize{30}{30}\selectfont] at (0.85,-1.35) {\faUserGraduate};
+  \node[say, anchor=west] at (2.4,-1.35) {Chicago for 4 days, budget \$600};
+  \node[anchor=west, inner sep=0pt, text=ink, font=\fontsize{20}{20}\selectfont] at (9.3,-1.35) {\faWallet};
+  \node[big, text=ink] at (10.35,-1.35) {\$600};
+
+  % ------------------------------------------------------------ 2
+  \node[stepno] at (0.3,-3.0) {2}; \node[head] at (0.85,-3.0) {It asks back, never guesses};
+  \node[app, anchor=west] at (0.85,-4.15) {Where are you leaving from?};
+  \node[app, anchor=west] at (6.9,-4.15) {What date?};
+  \node[say, anchor=west] at (5.0,-5.15) {From Boston, leaving Nov 20};
+
+  % ------------------------------------------------------------ 3
+  \node[stepno] at (0.3,-6.6) {3}; \node[head] at (0.85,-6.6) {AI agents research};
+  \foreach \x/\ic/\t in {0.85/\faPlane/8 flights, 4.6/\faBed/18 hotels, 8.35/\faIcon{ticket-alt}/59 events} {
+    \node[anchor=west, inner sep=0pt, text=primary, font=\Large] at (\x,-7.6) {\ic};
+    \node[txt] at (\x+0.85,-7.6) {\t};
+  }
+  \node[anchor=west, inner sep=0pt, text=primary, font=\Large] at (0.85,-8.45) {\faCloudRain};
+  \node[txt] at (1.7,-8.45) {rain and cold typical for those dates, so indoor stops too};
+
+  % ------------------------------------------------------------ 4
+  \node[stepno] at (0.3,-9.95) {4}; \node[head] at (0.85,-9.95) {The critic, plain code, checks the money};
+  \node[note] at (0.85,-10.9) {first plan};
+  \node[big, text=ink] at (0.85,-11.6) {\$1,235};
+  \draw[link, line width=0.9pt] (3.55,-11.6) -- (5.0,-11.6) node[midway, above, font=\small, text=muted] {5 repairs};
+  \node[note] at (5.3,-10.9) {cheapest it built};
+  \node[big, text=accent] at (5.3,-11.6) {\$780};
+  \node[anchor=west, inner sep=0pt, font=\large\bfseries, text=accent, align=left] at (7.6,-11.45) {\$180 over\\the \$600 budget};
+
+  % ------------------------------------------------------------ 5
+  \node[stepno] at (0.3,-13.15) {5}; \node[head] at (0.85,-13.15) {Alex decides};
+  \node[chip, anchor=west, draw=primary, line width=0.9pt, font=\normalsize] at (0.85,-14.15) {raise the budget};
+  \node[chip, anchor=west, draw=primary, line width=0.9pt, font=\normalsize] at (4.3,-14.15) {shorten to 2 nights};
+  \node[chip, anchor=west, draw=primary, line width=0.9pt, font=\normalsize] at (8.25,-14.15) {drive instead};
+  \node[txt] at (0.85,-15.1) {The plan is rebuilt and checked again, then waits.};
+  \node[anchor=west, inner sep=0pt, text=ok, font=\normalsize\bfseries] at (0.85,-15.85) {\faCalendarCheck\hspace{0.4em}Approve: a calendar file. Nothing is booked.};
+\end{tikzpicture}
+\end{document}

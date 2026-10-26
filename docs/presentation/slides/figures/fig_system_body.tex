@@ -1,0 +1,77 @@
+% The picture of the hero system design, shared by fig_system.tex (slides) and
+% fig_system_poster.tex (poster, small labels one size larger). \labsize sets the size of the
+% small labels.
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small,
+  stepno/.style={circle, fill=primary, text=white, font=\small\bfseries, inner sep=1.6pt, minimum size=5mm},
+  head/.style={anchor=west, font=\normalsize\bfseries, text=ink, inner sep=0pt},
+  agent/.style={sys, text width=2.3cm, align=left, font=\small, inner sep=4pt, anchor=north west},
+  plain/.style={code, text width=2.3cm, align=left, font=\small, inner sep=4pt, anchor=north west},
+  lab/.style={font=\labsize, text=muted, inner sep=1pt, align=left},
+  svc/.style={anchor=west, font=\small, text=ink, inner sep=0pt},
+  flow/.style={->, draw=ink, line width=0.8pt},
+]
+  \newcommand{\aimark}{\hfill{\color{primary}\faRobot}}
+  % ------------------------------------------------------------ stage headers, in plain words
+  \node[stepno] at (0.25,9.15) {1}; \node[head] at (0.65,9.15) {You ask};
+  \node[stepno] at (2.25,9.15) {2}; \node[head] at (2.65,9.15) {AI agents gather};
+  \node[stepno] at (8.35,9.15) {3}; \node[head] at (8.75,9.15) {Plain code checks the money};
+  \node[stepno] at (14.35,9.15) {4}; \node[head] at (14.75,9.15) {You decide};
+
+  % ------------------------------------------------------------ main row
+  \node[inner sep=0pt, text=ink, font=\fontsize{26}{26}\selectfont] (you) at (0.8,7.45) {\faUser};
+  \node[lab, anchor=north, text=ink, font=\small, align=center] at (0.8,6.85) {one\\sentence};
+  \node[agent] (intake) at (2.0,8.05) {\textbf{Intake}\aimark\\turns the sentence into city, dates, budget};
+  \node[agent] (research) at (4.95,8.05) {\textbf{Research}\aimark\\calls the tools it needs, at most 8 steps, then adds any it missed};
+  \node[plain] (composer) at (8.1,8.05) {\textbf{Composer}\\picks flight and hotel, times every stop, prices it all};
+  \node[plain] (critic) at (11.05,8.05) {\textbf{Critic}\\checks budget, dates, weather and repeats};
+  \node[inner sep=0pt, text=ink, font=\fontsize{26}{26}\selectfont] (rev) at (15.3,7.45) {\faUserCheck};
+  \node[lab, anchor=north, text=ink, font=\small, align=center] at (15.3,6.85) {\textbf{Checkpoint 2:}\\you review};
+
+  \draw[flow] (1.45,7.45) -- (intake.west |- 0,7.45);
+  \draw[flow] (intake.east |- 0,7.45) -- (research.west |- 0,7.45);
+  \draw[flow] (research.east |- 0,7.45) -- (composer.west |- 0,7.45);
+  \draw[flow] (composer.east |- 0,7.45) -- (critic.west |- 0,7.45);
+  \draw[flow] (critic.east |- 0,7.45) -- (14.6,7.45);
+  % the critic loop
+  \draw[flow] (critic.north) .. controls +(0,0.55) and +(0,0.55) .. (composer.north)
+    node[pos=0.5, above, font=\labsize, text=ink, inner sep=1pt] {one repair at a time, at most 5};
+
+  % ------------------------------------------------------------ checkpoint 1
+  \draw[flow] (intake.south) .. controls +(0,-0.5) and +(0,0.5) .. (0.3,5.5);
+  \node[lab, text=ink, anchor=north west, text width=4.6cm] at (0,5.35)
+    {\faUser\ \textbf{Checkpoint 1: asks you} when the city, origin or date is missing, unknown or in the past};
+
+  % ------------------------------------------------------------ guide and feedback
+  \node[agent] (guide) at (4.95,5.55) {\textbf{Guide}\aimark\\a visit guide for every stop};
+  \node[agent] (feedback) at (11.05,5.55) {\textbf{Feedback}\aimark\\``cheaper'' or ``skip a place'' become edits, the rest stays};
+  \draw[flow] (feedback.west) -- (9.25,0 |- feedback.west) -- (9.25,0 |- composer.south);
+  \node[lab, anchor=west] at (9.35,5.55) {revise};
+
+  % ------------------------------------------------------------ 4. outcomes of the review
+  \node[font=\labsize, text=accent, align=left, anchor=north west, inner sep=0pt, text width=2.9cm] at (14.15,6.0)
+    {\textbf{Still over budget?} You pick: raise it, shorten or drive};
+  \draw[flow] (14.1,0 |- feedback.west) -- (feedback.east);
+  \node[lab, anchor=west, text=ink] at (14.15,0 |- feedback.west) {or ask for a change};
+  \node[font=\small\bfseries, text=ok, anchor=north west, inner sep=0pt] at (14.15,4.05) {\faCalendarCheck\ approve};
+  \node[lab, anchor=north west, text width=2.9cm, inner sep=0pt] at (14.15,3.6) {exports a calendar file, books nothing};
+
+  % ------------------------------------------------------------ external services
+  \node[anchor=west, font=\small\bfseries, text=ink, inner sep=0pt] at (0,3.05) {Tools the agents call, each switching to live data on its own};
+  \foreach \x/\ic/\t/\s in {
+      0/\faPlane/Google Flights/via SerpApi,
+      2.75/\faBed/Google Hotels/via SerpApi,
+      5.5/\faIcon{ticket-alt}/Google Events/via SerpApi,
+      8.25/\faIcon{ticket-alt}/Ticketmaster/{events too},
+      11.0/\faLandmark/Google Maps/{via SerpApi},
+      13.75/\faCloudRain/Open-Meteo/{weather, no key}} {
+    \node[anchor=west, inner sep=0pt, text=primary, font=\large] at (\x,2.25) {\ic};
+    \node[svc] at (\x+0.6,2.42) {\t};
+    \node[svc, font=\labsize, text=muted] at (\x+0.6,2.02) {\s};
+  }
+  \node[anchor=west, inner sep=0pt, text=primary, font=\large] at (0,1.1) {\faRobot};
+  \node[svc, text width=6.9cm, align=left, anchor=west] at (0.6,1.1) {\textbf{OpenRouter} runs the language model behind every {\color{primary}\faRobot} agent. Any model that can call tools};
+
+  % demo mode, the keyless fallback
+  \node[planned, anchor=west, text width=8.45cm, font=\small, text=ink] at (8.15,1.1)
+    {\textbf{No keys? Demo mode.} The same steps run on rules, all but the visit guides, and tools return labelled sample data. A failed live call falls back the same way.};
+\end{tikzpicture}

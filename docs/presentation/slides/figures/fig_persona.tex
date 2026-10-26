@@ -1,0 +1,28 @@
+% Alex (an illustration) and the $600 budget. The request is the app's own example
+% ("Chicago for 4 days, budget $600", docs/screenshots/01_start.png). The cost parts are the
+% composer's cost breakdown (docs/screenshots/03_over_budget_escalation.png).
+\documentclass[border=3pt]{standalone}
+\input{figstyle}
+\begin{document}
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small,
+  part/.style={anchor=north, align=center, font=\small, text=ink, inner sep=0pt, text width=1.7cm},
+]
+  \node[anchor=west, inner sep=0pt, text=ink, font=\fontsize{40}{40}\selectfont] at (0,4.3) {\faUserGraduate};
+  \node[anchor=west, inner sep=0pt, align=left, font=\normalsize] at (1.75,4.55) {\textbf{Alex}, a student};
+  \node[anchor=west, inner sep=0pt, align=left, font=\footnotesize, text=muted] at (1.75,4.0) {an illustration};
+  \node[anchor=west, inner sep=0pt, text=ink, font=\fontsize{26}{26}\selectfont] at (0.1,2.6) {\faWallet};
+  \node[anchor=west, inner sep=0pt, font=\fontsize{26}{26}\selectfont\bfseries, text=ink] at (1.5,2.6) {\$600};
+  \node[anchor=west, inner sep=0pt, align=left, font=\small, text=muted] at (0,1.55) {for a long weekend,\\all in};
+
+  % what has to add up
+  \node[anchor=west, inner sep=0pt, font=\normalsize\bfseries, text=ink] at (4.6,4.75) {Everything has to add up};
+  \foreach \x/\ic/\t in {4.6/\faPlane/flights, 6.4/\faBed/hotel, 8.2/\faLandmark/{sights, events}, 10.0/\faUtensils/food, 11.8/\faBus/local transit} {
+    \node[anchor=center, inner sep=0pt, text=primary, font=\fontsize{20}{20}\selectfont] at (\x+0.7,3.75) {\ic};
+    \node[part] at (\x+0.7,3.15) {\t};
+  }
+  \foreach \x in {6.25,8.05,9.85,11.65} \node[font=\Large, text=muted] at (\x,3.75) {+};
+  \node[anchor=west, inner sep=0pt, font=\normalsize, text=ink, align=left] at (4.6,1.95)
+    {around the weather, the dates and what Alex likes,\\and again after every change};
+  \node[anchor=west, inner sep=0pt, font=\Large\bfseries, text=ink] at (4.6,0.85) {= total \,$\le$\, \$600 \,?};
+\end{tikzpicture}
+\end{document}
