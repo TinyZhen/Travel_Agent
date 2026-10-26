@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 class TripSpec(BaseModel):
     """What the user wants. Produced by the Intake agent, edited by feedback."""
-    origin: str = "Boston"
+    origin: Optional[str] = None
     destination: Optional[str] = None
     start_date: Optional[date] = None
     nights: int = 2

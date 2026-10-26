@@ -3,7 +3,7 @@ import AttractionsMap from "./AttractionsMap";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
-type Item = { kind: string; name: string; hours?: number; time?: string; cost: number; indoor?: boolean; lat?: number; lng?: number; source?: string; url?: string };
+type Item = { kind: string; name: string; hours?: number; time?: string; cost: number; price_unknown?: boolean; indoor?: boolean; lat?: number; lng?: number; source?: string; url?: string };
 type Day = { date: string; weather?: string; rain_chance?: number; items: Item[] };
 type State = {
     session_id: string;
@@ -182,7 +182,9 @@ function PlanView({ state }: { state: State }) {
     const pct = budget ? Math.min(100, (plan.total_cost / budget) * 100) : 0;
     const over = budget ? plan.total_cost > budget : false;
     const points = plan.days.flatMap((d) => d.items).filter((i) => i.lat && i.lng);
-    const isDemo = [plan.flight, plan.hotel, ...plan.days.flatMap((d) => d.items)].some((x) => x?.source === "demo");
+    const sources = [plan.flight, plan.hotel, ...plan.days.flatMap((d) => d.items)].filter(Boolean).map((x) => x.source);
+    const isDemo = sources.includes("demo");
+    const live = [...new Set(sources.filter((s) => s && s !== "demo"))];
 
     return (
         <>
@@ -218,22 +220,25 @@ function PlanView({ state }: { state: State }) {
                         {spec.assumptions.map((a) => <li key={a}>• {a}</li>)}
                     </ul>
                 )}
-                {isDemo && <p className="mt-3 text-xs text-amber-700">Demo mode: hotel, flight and event prices are illustrative samples, not live quotes.</p>}
+                {live.length > 0 && <p className="mt-3 text-xs text-teal-700">Live data: {live.join(", ").replace(/_/g, " ")}</p>}
+                {isDemo && <p className="mt-1 text-xs text-amber-700">Items marked as samples use illustrative prices, not live quotes.</p>}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
                 {plan.flight && (
                     <Card title="Flight" accent="border-l-sky-500">
-                        <p className="font-semibold">{plan.flight.airline} · {plan.flight.from} → {plan.flight.to}</p>
+                        <p className="font-semibold">{plan.flight.airline} · {plan.flight.from} → {plan.flight.to}{plan.flight.stops ? ` · ${plan.flight.stops} stop` : ""}</p>
                         <p className="text-sm text-stone-500">{fmtTime(plan.flight.departure_time)} → {fmtTime(plan.flight.arrival_time)}</p>
                         <p className="text-sm">{money(plan.flight.price_per_person)} / person{plan.flight.round_trip ? " round trip" : ""}</p>
+                        <SourceTag item={plan.flight} />
                     </Card>
                 )}
                 {plan.hotel && (
                     <Card title="Hotel" accent="border-l-violet-500">
                         <p className="font-semibold">{plan.hotel.name}</p>
-                        <p className="text-sm text-stone-500">{plan.hotel.tier} · ★ {plan.hotel.rating}</p>
+                        <p className="text-sm text-stone-500">{plan.hotel.stars ? `${plan.hotel.stars}-star · ` : `${plan.hotel.tier} · `}{plan.hotel.rating ? `guest rating ${plan.hotel.rating}` : "no rating"}</p>
                         <p className="text-sm">{money(plan.hotel.nightly_price)} / night</p>
+                        <SourceTag item={plan.hotel} />
                     </Card>
                 )}
             </div>
@@ -253,7 +258,7 @@ function PlanView({ state }: { state: State }) {
                                         {it.url ? <a href={it.url} target="_blank" rel="noreferrer" className="underline">{it.name}</a> : it.name}
                                         {it.indoor && <span className="ml-2 rounded bg-stone-100 px-1.5 text-xs text-stone-500">indoor</span>}
                                     </span>
-                                    <span className="text-stone-500">{it.cost ? money(it.cost) : "free"}</span>
+                                    <span className="text-stone-500">{it.price_unknown ? "price on site" : it.cost ? money(it.cost) : "free"}</span>
                                 </li>
                             ))}
                             {d.items.length === 0 && <li className="text-sm text-stone-400">Free time</li>}
@@ -273,6 +278,16 @@ function Card({ title, accent, children }: { title: string; accent: string; chil
             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-stone-400">{title}</p>
             {children}
         </div>
+    );
+}
+
+function SourceTag({ item }: { item: any }) {
+    const label = item.source === "demo" ? "sample price" : `live · ${String(item.source).replace(/_/g, " ")}`;
+    return (
+        <p className="mt-1 text-xs text-stone-400">
+            {label}
+            {item.url && <> · <a href={item.url} target="_blank" rel="noreferrer" className="underline">view</a></>}
+        </p>
     );
 }
 

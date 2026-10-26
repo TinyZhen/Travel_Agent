@@ -62,6 +62,11 @@ class Session:
     def _intake(self, message: str, merge_interests: bool = False):
         s = self.state
         fields, method = intake.extract(message, self.today)
+        # A bare city answering "Where are you leaving from?" is the origin, not a new destination.
+        asked_origin = any("leaving from" in q for q in s.questions)
+        if asked_origin and "origin" not in fields and fields.get("destination") and s.spec.destination \
+                and fields["destination"] != s.spec.destination:
+            fields["origin"] = fields.pop("destination")
         if merge_interests and "interests" in fields:
             fields["interests"] = sorted(set(s.spec.interests) | set(fields["interests"]))
         self.provided |= fields.keys()

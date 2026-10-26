@@ -11,7 +11,7 @@ from typing import Optional
 
 import llm
 from schemas import DayPlan, Plan, TraceStep, TripSpec
-from tools import resolve_city
+from tools import drive_hours
 
 FOOD_PER_DAY = {"budget": 45, "mid": 70, "luxury": 120, "any": 70}
 LOCAL_TRANSIT_PER_DAY = 15
@@ -56,7 +56,7 @@ def pick_hotel(hotels: list, spec: TripSpec, c: Constraints) -> Optional[dict]:
     pref = TIER_ORDER[min(TIER_ORDER.index(pref), max_i)]
     same = [h for h in allowed if h.get("tier") == pref]
     pool = same or allowed
-    return max(pool, key=lambda h: (h.get("rating", 0), -h["nightly_price"]))
+    return max(pool, key=lambda h: (h.get("rating") or 0, -h["nightly_price"]))
 
 
 def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
@@ -75,8 +75,8 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     if c.free_attractions_only:
         attractions = [a for a in attractions if not a.get("cost_per_person")]
     events = [e for e in _ok(research.get("search_events")) if e["name"] not in c.excluded]
-    if c.skip_paid_events:
-        events = [e for e in events if not e.get("price_per_person")]
+    if c.skip_paid_events:  # unknown price counts as paid
+        events = [e for e in events if e.get("price_per_person") == 0]
     interests = set(spec.interests)
 
     used: set[str] = set()
@@ -105,6 +105,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                 used.add(e["name"])
                 dp.items.append({"kind": "event", "name": e["name"], "time": e.get("time"),
                                  "cost": (e.get("price_per_person") or 0) * travelers,
+                                 "price_unknown": e.get("price_per_person") is None,
                                  "url": e.get("url"), "source": e.get("source")})
                 break  # at most one evening event per day
         plan.days.append(dp)
@@ -114,8 +115,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     if plan.flight:
         cb["flights"] = plan.flight["price_per_person"] * travelers
     if spec.transport == "drive":
-        o, d = resolve_city(spec.origin), resolve_city(spec.destination)
-        hours = (d or {}).get("drive_hours") or 4
+        hours = drive_hours(spec.origin, spec.destination) or 4
         cb["gas_and_tolls"] = round(hours * 60 * 2 * 0.18 + 20)
         cb["parking"] = 35 * spec.nights
     if plan.hotel:

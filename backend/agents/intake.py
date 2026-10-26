@@ -8,7 +8,7 @@ from typing import Optional
 
 import llm
 from schemas import TripSpec
-from tools import resolve_city
+from tools import drive_hours, resolve_city
 from fixtures.demo_data import CITIES, CITY_ALIASES
 
 MONTHS = {m: i for i, m in enumerate(
@@ -26,7 +26,7 @@ NUM_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "se
 
 SYSTEM = """You are the Intake agent of a travel-planning system. Today is {today}.
 Extract the trip request into JSON with keys:
-origin (city, default "Boston" if not said), destination (city or null),
+origin (city the traveler leaves from, or null if not stated; never assume one), destination (city or null),
 start_date (YYYY-MM-DD or null; resolve relative dates like "next weekend" from today; a weekend trip starts
 on the Friday; copy explicit dates exactly as written even if they are in the past, because the system validates them),
 nights (int; "N days" means N-1 nights, "a weekend" means 2 nights), travelers (int), budget_usd (number or null, total for the whole party),
@@ -101,7 +101,8 @@ def _parse_date(text: str, today: date) -> Optional[date]:
 def rule_extract(text: str, today: date, feedback: bool = False) -> dict:
     t = text.lower()
     out: dict = {}
-    origin = _find_city(text, "from") or _find_city(t, "from")
+    origin = _find_city(text, "from") or _find_city(t, "from") \
+        or _find_city(t, r"(?:live|based|located|i'm|i am|we're|we are) in")
     if origin:
         out["origin"] = origin
     if feedback:  # "skip Alcatraz" must not become a new destination
@@ -175,6 +176,10 @@ def validate(spec: TripSpec, today: Optional[date] = None) -> list[str]:
     """Human-in-the-loop decision point #1: what must we ask before planning?"""
     today = today or date.today()
     qs = []
+    if not spec.origin:
+        qs.append("Where are you leaving from?")
+    elif not resolve_city(spec.origin):
+        qs.append(f"I couldn't find \"{spec.origin}\". Which city are you leaving from?")
     if not spec.destination:
         qs.append("Where would you like to go?")
     elif not resolve_city(spec.destination):
@@ -196,15 +201,13 @@ def apply_defaults(spec: TripSpec, provided: set[str]) -> TripSpec:
     if spec.start_date:
         end = spec.start_date + timedelta(days=spec.nights)
         notes.append(f"Dates: {spec.start_date:%a %b %d} – {end:%a %b %d, %Y}.")
-    if "origin" not in provided:
-        notes.append(f"Assumed departing from {spec.origin}.")
     if "travelers" not in provided:
         notes.append("Assumed 1 traveler.")
     if "nights" not in provided:
         notes.append(f"Assumed {spec.nights} nights.")
-    o, d = resolve_city(spec.origin), resolve_city(spec.destination or "")
-    if spec.transport == "fly" and o and d and d.get("drive_hours") is not None and \
-            o.get("key") == "boston" and d["drive_hours"] <= 4.5 and "transport" not in provided:
-        notes.append(f"{d['name']} is a {d['drive_hours']:.0f}h drive. Still pricing flights; say \"I'll drive\" to switch.")
+    hours = drive_hours(spec.origin or "", spec.destination or "")
+    if spec.transport == "fly" and hours is not None and hours <= 4.5 and "transport" not in provided:
+        notes.append(f"{spec.destination} is about a {hours:.0f}h drive from {spec.origin}. "
+                     "Still pricing flights; say \"I'll drive\" to switch.")
     spec.assumptions = notes
     return spec

@@ -6,8 +6,10 @@ carries a `source` field so the UI and the evaluation can tell them apart.
 """
 from __future__ import annotations
 
+import json
 import math
 import os
+import re
 import zlib
 from datetime import date, datetime, timedelta
 from typing import Any, Optional
@@ -63,13 +65,44 @@ def resolve_city(name: str) -> Optional[dict]:
     return None
 
 
+def drive_hours(origin: str, destination: str) -> Optional[float]:
+    """Rough driving time: straight-line distance × 1.25 road factor at 85 km/h."""
+    o, d = resolve_city(origin), resolve_city(destination)
+    if not o or not d:
+        return None
+    return round(_haversine_km(o, d) * 1.25 / 85, 1)
+
+
+# --------------------------------------------------------------------- SerpApi
+# One key gives live Google Flights, Google Hotels and Google Events results.
+# (Amadeus Self-Service, used by the first prototype, was shut down in July 2026.)
+_CACHE: dict[str, Any] = {}
+
+
+def _serpapi(params: dict) -> Optional[dict]:
+    if not os.getenv("SERPAPI_API_KEY") or offline():
+        return None
+    key = json.dumps(params, sort_keys=True)
+    if key in _CACHE:  # the free plan has 250 searches/month; don't spend them twice
+        return _CACHE[key]
+    try:
+        res = requests.get("https://serpapi.com/search.json", timeout=25, params={
+            **params, "api_key": os.getenv("SERPAPI_API_KEY"), "hl": "en", "gl": "us", "currency": "USD"}).json()
+    except (requests.RequestException, ValueError):
+        return None
+    if "error" in res:
+        return None
+    _CACHE[key] = res
+    return res
+
+
 # -------------------------------------------------------------------- flights
-def search_flights(origin: str, destination: str, date: str, travelers: int = 1) -> list[dict]:
+def search_flights(origin: str, destination: str, date: str, travelers: int = 1, nights: int = 2) -> list[dict]:
     o, d = resolve_city(origin), resolve_city(destination)
     if not o or not d:
         return [{"error": f"Unknown city: {origin if not o else destination}"}]
-    if os.getenv("AMADEUS_API_KEY") and not offline() and o.get("iata") and d.get("iata"):
-        live = _amadeus_flights(o["iata"], d["iata"], date, travelers)
+    if o.get("iata") and d.get("iata"):
+        live = _google_flights(o["iata"], d["iata"], date, nights)
         if live:
             return live
     km = _haversine_km(o, d)
@@ -90,37 +123,37 @@ def search_flights(origin: str, destination: str, date: str, travelers: int = 1)
     return sorted(out, key=lambda f: f["price_per_person"])
 
 
-def _amadeus_flights(o: str, d: str, day: str, travelers: int) -> list[dict]:
-    try:
-        tok = requests.post("https://test.api.amadeus.com/v1/security/oauth2/token", data={
-            "grant_type": "client_credentials", "client_id": os.getenv("AMADEUS_API_KEY"),
-            "client_secret": os.getenv("AMADEUS_SECRET")}, timeout=TIMEOUT).json()["access_token"]
-        res = requests.get("https://test.api.amadeus.com/v2/shopping/flight-offers",
-                           headers={"Authorization": f"Bearer {tok}"},
-                           params={"originLocationCode": o, "destinationLocationCode": d,
-                                   "departureDate": day, "adults": travelers,
-                                   "currencyCode": "USD", "max": 10}, timeout=TIMEOUT)
-        res.raise_for_status()
-    except (requests.RequestException, KeyError, ValueError):
+def _google_flights(o: str, d: str, day: str, nights: int) -> list[dict]:
+    ret = (_parse_date(day) + timedelta(days=max(nights, 1))).isoformat()
+    res = _serpapi({"engine": "google_flights", "departure_id": o, "arrival_id": d,
+                    "outbound_date": day, "return_date": ret, "type": 1, "adults": 1})
+    if not res:
         return []
     out = []
-    for offer in res.json().get("data", []):
-        segs = offer["itineraries"][0]["segments"]
+    for offer in (res.get("best_flights") or []) + (res.get("other_flights") or []):
+        legs = offer.get("flights") or []
+        if not legs or not offer.get("price"):
+            continue
         out.append({
-            "airline": segs[0].get("carrierCode"), "from": segs[0]["departure"]["iataCode"],
-            "to": segs[-1]["arrival"]["iataCode"], "departure_time": segs[0]["departure"]["at"],
-            "arrival_time": segs[-1]["arrival"]["at"], "stops": len(segs) - 1,
-            "price_per_person": float(offer["price"]["total"]) / travelers,
-            "round_trip": False, "source": "amadeus",
+            "airline": legs[0].get("airline", "?"), "from": legs[0]["departure_airport"]["id"],
+            "to": legs[-1]["arrival_airport"]["id"],
+            "departure_time": legs[0]["departure_airport"]["time"].replace(" ", "T"),
+            "arrival_time": legs[-1]["arrival_airport"]["time"].replace(" ", "T"),
+            "stops": len(legs) - 1, "price_per_person": float(offer["price"]),
+            "round_trip": True, "source": "google_flights",
+            "url": res.get("search_metadata", {}).get("google_flights_url"),
         })
-    return sorted(out, key=lambda f: f["price_per_person"])[:6]
+    return sorted(out, key=lambda f: f["price_per_person"])[:8]
 
 
 # --------------------------------------------------------------------- hotels
-def search_hotels(destination: str, checkin: str, nights: int = 2) -> list[dict]:
+def search_hotels(destination: str, checkin: str, nights: int = 2, travelers: int = 1) -> list[dict]:
     c = resolve_city(destination)
     if not c:
         return [{"error": f"Unknown city: {destination}"}]
+    live = _google_hotels(c["name"], checkin, nights, travelers)
+    if live:
+        return live
     weekend = _parse_date(checkin).weekday() >= 4
     out = []
     for tier, suffix, price, rating in D.HOTEL_TIERS:
@@ -132,6 +165,34 @@ def search_hotels(destination: str, checkin: str, nights: int = 2) -> list[dict]
             "lat": c["lat"] + ((s % 40) - 20) / 1000, "lng": c["lng"] + ((s // 40 % 40) - 20) / 1000,
             "source": "demo",
         })
+    return sorted(out, key=lambda h: h["nightly_price"])
+
+
+def _google_hotels(city: str, checkin: str, nights: int, travelers: int) -> list[dict]:
+    out_date = (_parse_date(checkin) + timedelta(days=max(nights, 1))).isoformat()
+    res = _serpapi({"engine": "google_hotels", "q": f"hotels in {city}", "check_in_date": checkin,
+                    "check_out_date": out_date, "adults": min(max(travelers, 1), 2)})
+    if not res:
+        return []
+    out = []
+    for h in res.get("properties", []):
+        nightly = (h.get("rate_per_night") or {}).get("extracted_lowest")
+        if not nightly or h.get("type") == "vacation rental":
+            continue
+        stars = h.get("extracted_hotel_class") or 0
+        gps = h.get("gps_coordinates") or {}
+        out.append({"name": h.get("name"), "nightly_price": float(nightly), "total_price": float(nightly) * nights,
+                    "rating": h.get("overall_rating"), "stars": stars,
+                    "tier": "luxury" if stars >= 4 else "mid" if stars == 3 else "budget" if stars else None,
+                    "lat": gps.get("latitude"), "lng": gps.get("longitude"), "url": h.get("link"),
+                    "source": "google_hotels"})
+    if not out:
+        return []
+    # Unknown star class: tier by price third.
+    prices = sorted(h["nightly_price"] for h in out)
+    lo, hi = prices[len(prices) // 3], prices[2 * len(prices) // 3]
+    for h in out:
+        h["tier"] = h["tier"] or ("budget" if h["nightly_price"] <= lo else "mid" if h["nightly_price"] <= hi else "luxury")
     return sorted(out, key=lambda h: h["nightly_price"])
 
 
@@ -181,10 +242,11 @@ def search_events(destination: str, start_date: str, nights: int = 2,
     if not c:
         return [{"error": f"Unknown city: {destination}"}]
     start = _parse_date(start_date)
-    if os.getenv("TICKETMASTER_API_KEY") and not offline():
+    live = _google_events(c["name"], start, nights)
+    if not live and os.getenv("TICKETMASTER_API_KEY") and not offline():
         live = _ticketmaster(c["name"], start, nights)
-        if live:
-            return live
+    if live:
+        return live
     out = []
     for offset in range(nights + 1):
         day = start + timedelta(days=offset)
@@ -192,6 +254,47 @@ def search_events(destination: str, start_date: str, nights: int = 2,
             if day.weekday() == weekday:
                 out.append({"name": f"{title} — {c['name']}", "date": day.isoformat(), "time": t,
                             "tags": tags, "price_per_person": price, "source": "demo"})
+    return out
+
+
+EVENT_TAGS = {
+    "music": ["concert", "jazz", "band", "live music", "symphony", "orchestra", "tour", "dj", "festival"],
+    "comedy": ["comedy", "stand-up", "improv"], "art": ["art", "gallery", "exhibit", "museum", "theater", "theatre"],
+    "food": ["food", "wine", "beer", "tasting", "market"], "family": ["kids", "family", "children"],
+    "nightlife": ["party", "club", "night"], "sports": ["game", "vs", "match", "marathon"],
+}
+
+
+def _tag_event(title: str) -> list[str]:
+    t = title.lower()
+    return [tag for tag, words in EVENT_TAGS.items() if any(w in t for w in words)]
+
+
+def _google_events(city: str, start: date, nights: int) -> list[dict]:
+    res = _serpapi({"engine": "google_events", "q": f"Events in {city}"})
+    if not res:
+        return []
+    days = {start + timedelta(days=i) for i in range(nights + 1)}
+    out = []
+    for e in res.get("events_results", []):
+        when = (e.get("date") or {}).get("start_date", "")  # e.g. "Nov 20"
+        m = re.match(r"([A-Za-z]{3})\s+(\d{1,2})", when)
+        if not m:
+            continue
+        try:
+            day = datetime.strptime(f"{m[1]} {m[2]} {start.year}", "%b %d %Y").date()
+        except ValueError:
+            continue
+        if day not in days:
+            continue
+        clock = (e.get("date") or {}).get("when", "").split(",")[-1]  # "Fri, Nov 13, 8 – 10 PM" → " 8 – 10 PM"
+        tm, ampm = re.search(r"(\d{1,2})(?::(\d{2}))?\s*([AP]M)?", clock), re.search(r"[AP]M", clock)
+        time = None
+        if tm and ampm:  # start time; "8 – 10 PM" borrows the PM
+            time = f"{int(tm[1]) % 12 + (12 if (tm[3] or ampm[0]) == 'PM' else 0):02d}:{tm[2] or '00'}"
+        out.append({"name": e.get("title"), "date": day.isoformat(), "time": time, "tags": _tag_event(e.get("title", "")),
+                    "price_per_person": None, "venue": (e.get("venue") or {}).get("name"),
+                    "url": e.get("link"), "source": "google_events"})
     return out
 
 
@@ -210,7 +313,7 @@ def _ticketmaster(city: str, start: date, nights: int) -> list[dict]:
         prices = e.get("priceRanges") or [{}]
         out.append({"name": e.get("name"), "date": st.get("localDate"), "time": st.get("localTime", "")[:5],
                     "tags": [c.get("segment", {}).get("name", "").lower() for c in e.get("classifications", [])],
-                    "price_per_person": prices[0].get("min", 0), "url": e.get("url"),
+                    "price_per_person": prices[0].get("min"), "url": e.get("url"),
                     "source": "ticketmaster"})
     return out
 
@@ -255,12 +358,14 @@ SCHEMAS = [
         "name": "search_flights", "description": "Round-trip flight options between two cities.",
         "parameters": {"type": "object", "properties": {
             "origin": {"type": "string"}, "destination": {"type": "string"},
-            "date": {"type": "string", "description": "YYYY-MM-DD"}, "travelers": {"type": "integer"}},
+            "date": {"type": "string", "description": "YYYY-MM-DD"}, "travelers": {"type": "integer"},
+            "nights": {"type": "integer", "description": "nights before the return flight"}},
             "required": ["origin", "destination", "date"]}}},
     {"type": "function", "function": {
         "name": "search_hotels", "description": "Hotel options with nightly and total price.",
         "parameters": {"type": "object", "properties": {
-            "destination": {"type": "string"}, "checkin": {"type": "string"}, "nights": {"type": "integer"}},
+            "destination": {"type": "string"}, "checkin": {"type": "string"}, "nights": {"type": "integer"},
+            "travelers": {"type": "integer"}},
             "required": ["destination", "checkin"]}}},
     {"type": "function", "function": {
         "name": "search_attractions", "description": "Top attractions, ranked by match with interests.",

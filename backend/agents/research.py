@@ -33,8 +33,9 @@ def required_tools(spec: TripSpec) -> list[str]:
 def _default_args(name: str, spec: TripSpec) -> dict:
     d, s = spec.destination, spec.start_date.isoformat()
     return {
-        "search_flights": {"origin": spec.origin, "destination": d, "date": s, "travelers": spec.travelers},
-        "search_hotels": {"destination": d, "checkin": s, "nights": spec.nights},
+        "search_flights": {"origin": spec.origin, "destination": d, "date": s, "travelers": spec.travelers,
+                           "nights": spec.nights},
+        "search_hotels": {"destination": d, "checkin": s, "nights": spec.nights, "travelers": spec.travelers},
         "search_attractions": {"destination": d, "interests": spec.interests},
         "search_events": {"destination": d, "start_date": s, "nights": spec.nights, "interests": spec.interests},
         "get_weather": {"destination": d, "start_date": s, "nights": spec.nights},

@@ -38,13 +38,13 @@ Create `backend/.env` with any of the following. Each tool switches to live data
 ```
 OPENROUTER_API_KEY=...       # turns on the LLM agents (intake, tool-calling research, summaries)
 LLM_MODEL=anthropic/claude-haiku-5.5   # optional, any OpenRouter model with tool calling
-AMADEUS_API_KEY=...          # flights (Amadeus test environment)
-AMADEUS_SECRET=...
-GOOGLE_API_KEY=...           # attractions (Places API)
-TICKETMASTER_API_KEY=...     # events
+SERPAPI_API_KEY=...          # live Google Flights, Google Hotels and Google Events (free: 250 searches/month)
+TICKETMASTER_API_KEY=...     # optional second events source, includes ticket prices (free)
+GOOGLE_API_KEY=...           # optional: attractions via Places API (needs billing enabled)
 ```
 
-Weather comes from [Open-Meteo](https://open-meteo.com/), which needs no key. When the trip is more than 16
+One trip plan uses about 3 SerpApi searches (results are cached per session), so the free plan covers
+roughly 80 plans a month. Weather comes from [Open-Meteo](https://open-meteo.com/), which needs no key. When the trip is more than 16
 days away, a labelled seasonal estimate is used instead. If a live call fails, that tool falls back to sample data
 and the result carries `source: "demo"`.
 
@@ -60,7 +60,7 @@ and the result carries `source: "demo"`.
 
 **Human-in-the-loop checkpoints**
 
-1. **Before planning:** if the destination is missing, unknown or ambiguous, or the date is missing or in the past, the agent asks instead of guessing.
+1. **Before planning:** if the origin or destination is missing or unknown, or the date is missing or in the past, the agent asks instead of guessing.
 2. **Before finishing:** every plan waits for approval. If the critic cannot fit the budget, it does not quietly
    exceed it. It shows the cheapest plan and asks you to choose: raise the budget, shorten the stay, or drive.
 
@@ -92,7 +92,10 @@ Latest results: [demo mode](docs/evaluation_results.md) and [LLM mode, Claude Ha
 - The rule parser misses complex date phrases ("first weekend of December"); it asks for a date instead.
 - Food and local transit are flat per-day estimates, not real prices.
 - Sessions live in memory; restarting the backend clears them.
-- The live flight and hotel integrations use the Amadeus *test* environment, whose data is limited and can be unavailable.
+- The first prototype used Amadeus Self-Service for flights and hotels; Amadeus shut that portal down in July 2026, so
+  live travel data now comes from SerpApi (Google Flights/Hotels/Events). Google Events rarely lists ticket prices,
+  so those events show "price on site" and are not counted in the total.
+- Live mode only knows airport codes for the 7 built-in cities; other cities fall back to sample flights.
 
 ## Project structure
 

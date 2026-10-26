@@ -25,7 +25,7 @@ class Message(BaseModel):
 def health():
     return {"ok": True, "llm": llm.available(), "model": llm.DEFAULT_MODEL if llm.available() else None,
             "live_tools": {k: bool(os.getenv(k)) for k in
-                           ["AMADEUS_API_KEY", "GOOGLE_API_KEY", "TICKETMASTER_API_KEY"]}}
+                           ["SERPAPI_API_KEY", "GOOGLE_API_KEY", "TICKETMASTER_API_KEY"]}}
 
 
 @app.post("/api/message")
