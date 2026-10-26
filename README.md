@@ -55,7 +55,8 @@ The `Dockerfile` builds the React app and serves it from the FastAPI backend, so
 
 1. Push this repo to GitHub.
 2. On [render.com](https://render.com), choose **New → Blueprint** and pick the repo. `render.yaml` sets everything up.
-3. Fill in the secrets when asked: `OPENROUTER_API_KEY`, `SERPAPI_API_KEY`, and `ROAMEO_ACCESS_CODE`
+3. Fill in the secrets when asked: `OPENROUTER_API_KEY`, `SERPAPI_API_KEY`, `TICKETMASTER_API_KEY` (real events for
+   any date; Google Events only covers about the next 10 days), and `ROAMEO_ACCESS_CODE`
    (visitors must enter this code, so nobody else can spend your API quota).
 4. Open the URL Render gives you. The free plan sleeps after 15 minutes idle; open it a minute before a demo.
 

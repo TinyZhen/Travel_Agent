@@ -428,22 +428,46 @@ def _parse_events(raw: list[dict], start: date, days: set) -> list[dict]:
     return out
 
 
+TM_TAGS = {  # Ticketmaster segment/genre -> our interest tags
+    "music": ["music"], "jazz": ["music"], "blues": ["music"], "rock": ["music"], "classical": ["music", "art"],
+    "comedy": ["comedy", "nightlife"], "theatre": ["art"], "arts & theatre": ["art"], "dance": ["art"],
+    "family": ["family"], "sports": ["sports"], "food & drink": ["food"],
+}
+TM_JUNK = ("flex", "admission", "discount day", "parking", "gift card", "voucher", "membership", "upgrade")
+
+
 def _ticketmaster(city: str, start: date, nights: int) -> list[dict]:
+    days = {start + timedelta(days=i) for i in range(nights + 1)}
     try:
         res = requests.get("https://app.ticketmaster.com/discovery/v2/events.json", params={
-            "apikey": os.getenv("TICKETMASTER_API_KEY"), "city": city, "size": 10, "sort": "date,asc",
-            "startDateTime": f"{start}T00:00:00Z",
-            "endDateTime": f"{start + timedelta(days=nights + 1)}T00:00:00Z"}, timeout=TIMEOUT)
+            # Most relevant first (big cities list hundreds of events a day); the API filters in UTC,
+            # so the window is padded and local dates are checked below.
+            "apikey": os.getenv("TICKETMASTER_API_KEY"), "city": city, "size": 100, "sort": "relevance,desc",
+            "startDateTime": f"{start}T04:00:00Z",
+            "endDateTime": f"{start + timedelta(days=nights + 1)}T10:00:00Z"}, timeout=TIMEOUT)
         res.raise_for_status()
     except requests.RequestException:
         return []
-    out = []
+    out, seen = [], set()
     for e in res.json().get("_embedded", {}).get("events", []):
         st = e.get("dates", {}).get("start", {})
+        name = e.get("name") or ""
+        try:
+            day = date.fromisoformat(st.get("localDate", ""))
+        except ValueError:
+            continue
+        # only real, dated events during the stay (not open-dated museum passes), once each
+        key = re.sub(r"\s*\(.*?\)", "", name).strip().lower()  # "Hamilton (NY)" == "Hamilton"
+        if day not in days or not st.get("localTime") or key in seen or any(j in name.lower() for j in TM_JUNK):
+            continue
+        seen.add(key)
+        labels = [x.get(k, {}).get("name", "").lower() for x in e.get("classifications", [])
+                  for k in ("segment", "genre", "subGenre")]
+        tags = sorted({t for lab in labels for t in TM_TAGS.get(lab, [])})
         prices = e.get("priceRanges") or [{}]
-        out.append({"name": e.get("name"), "date": st.get("localDate"), "time": st.get("localTime", "")[:5],
-                    "tags": [c.get("segment", {}).get("name", "").lower() for c in e.get("classifications", [])],
-                    "price_per_person": prices[0].get("min"), "url": e.get("url"),
+        venue = ((e.get("_embedded") or {}).get("venues") or [{}])[0].get("name")
+        out.append({"name": name, "date": day.isoformat(), "time": st["localTime"][:5], "tags": tags,
+                    "venue": venue, "price_per_person": prices[0].get("min"), "url": e.get("url"),
                     "source": "ticketmaster"})
     return out
 
