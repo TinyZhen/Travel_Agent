@@ -156,6 +156,18 @@ def _describe(w: Optional[dict]) -> Optional[str]:
     return s
 
 
+CATEGORY_CAP = {"museum": 3, "park": 2, "garden": 2}
+
+
+def _over_cap(a: dict, spec: TripSpec, seen: dict[str, int]) -> bool:
+    """A third ice rink is filler, not a plan: cap each kind of place per trip (more if it's their thing)."""
+    cat = a.get("category")
+    if not cat:
+        return False
+    cap = CATEGORY_CAP.get(cat, 1) + (2 if (a.get("tags") or [None])[0] in spec.interests else 0)
+    return seen.get(cat, 0) >= cap
+
+
 def _fill_gaps(items: list[dict], cond: Optional[dict] = None) -> list[dict]:
     """Make long idle stretches explicit instead of leaving silent holes in the day."""
     out = []
@@ -201,15 +213,18 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     base = plan.hotel if plan.hotel and plan.hotel.get("lat") is not None else \
         {"name": "city centre", "lat": city.get("lat"), "lng": city.get("lng")}
     used: set[str] = set()
+    seen: dict[str, int] = {}  # place categories already in the trip (ice rink, zoo, market…)
     # Activities the traveler asked for get a day of their own choosing: a full day if possible
     # (skiing: the coldest one), and the best-rated nearby place.
     activity_day: dict[int, dict] = {}
-    for act in spec.activities:
+    for act in spec.activities:  # an activity can appear twice: "another ski day"
         options = [a for a in research.get(f"activity:{act}") or [] if a["name"] not in c.excluded]
         if not options:
             continue
         full = [j for j in range(days_n) if days_n == 1 or 0 < j < days_n - 1] or list(range(days_n))
-        free = [j for j in full if j not in activity_day] or full
+        free = [j for j in full if j not in activity_day]
+        if not free:
+            continue  # no full day left for it
         if "winter" in options[0].get("tags", []):
             free.sort(key=lambda j: (weather.get((spec.start_date + timedelta(days=j)).isoformat()) or {}).get("high_c", 0))
         activity_day[free[0]] = options[0]
@@ -246,13 +261,15 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
             end = min(end, _hm("15:00") if spec.transport != "local" else end)
 
         # ---- evening event decides when the day's sightseeing must end
-        event = next((e for e in events if e["date"] == day.isoformat() and e["name"] not in used
-                      and (not interests or interests & set(e.get("tags", [])))), None)
+        todays = [e for e in events if e["date"] == day.isoformat() and e["name"] not in used]
+        # Prefer events that match their interests; any event beats an empty evening otherwise.
+        event = next((e for e in todays if interests & set(e.get("tags", []))), None) or \
+            (todays[0] if todays and not any(interests & set(e.get("tags", [])) for e in events) else None)
         daytime = event if event and event.get("time") and _hm(event["time"]) < _hm("17:00") else None
         if daytime:
-            event = next((e for e in events if e["date"] == day.isoformat() and e["name"] not in used
-                          and e.get("time") and _hm(e["time"]) >= _hm("17:00")
-                          and (not interests or interests & set(e.get("tags", [])))), None)
+            later = [e for e in todays if e["name"] != daytime["name"] and e.get("time") and _hm(e["time"]) >= _hm("17:00")]
+            event = next((e for e in later if interests & set(e.get("tags", []))), None) or \
+                (later[0] if later and not any(interests & set(e.get("tags", [])) for e in events) else None)
         if event and event.get("time"):
             end = min(end, _hm(event["time"]) - 90)  # leave time for dinner first
 
@@ -287,6 +304,8 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                             and any(x["kind"] == "attraction" and not x.get("indoor") and not x.get("winter")
                                     for x in dp.items):
                         continue  # bad weather: at most one outdoor stop, keep the rest of the day light
+                    if _over_cap(a, spec, seen) and a["name"] not in c.must_include:
+                        continue
                     val = _score(a, c, cond) * 10 - leg["minutes"] * 0.25
                     if best_val is None or val > best_val:
                         best, best_val = a, val
@@ -303,9 +322,13 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                                  "cost_estimated": best.get("cost_estimated", False),
                                  "url": best.get("url"), "source": best.get("source")})
                 clock, pos, last_sight = arrive + dur, best, best["name"]
+                if best.get("category"):
+                    seen[best["category"]] = seen.get(best["category"], 0) + 1
 
         if i in activity_day:  # the thing they asked for comes first, at the start of the day
             a = activity_day[i]
+            if a["name"] in used:  # second day of the same activity: same place is fine
+                a = {**a, "name": f"{a['name']} (day 2)"}
             leg = _leg(pos, a) or {"minutes": 30, "mode": "drive", "km": a.get("km_from_city")}
             if a.get("activity") in CAR_ACTIVITIES and leg["mode"] != "drive":  # no bus goes up the ski hill
                 leg = {"mode": "drive", "km": leg["km"], "minutes": round((10 + leg["km"] / 50 * 60) / 5) * 5}

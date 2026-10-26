@@ -57,14 +57,25 @@ def _call_many(calls: list[tuple[str, dict]], results: dict, log: Callable[[Trac
     """Run independent tool calls in parallel (live APIs take seconds each); log in request order."""
     with ThreadPoolExecutor(max_workers=max(len(calls), 1)) as pool:
         outs = list(pool.map(lambda c: _execute(*c), calls))
-    return [_record(name, out, results, log) for (name, _), out in zip(calls, outs)]
+    return [_record(name, out, results, log, args) for (name, args), out in zip(calls, outs)]
 
 
-def _record(name: str, out: list, results: dict, log: Callable[[TraceStep], None]) -> str:
-    results[name] = out
+MERGE_TOOLS = {"search_attractions", "search_events"}
+
+
+def _record(name: str, out: list, results: dict, log: Callable[[TraceStep], None], args: dict = None) -> str:
+    good = [r for r in out if isinstance(r, dict) and "error" not in r]
+    prev = results.get(name)
+    if prev and name in MERGE_TOOLS:
+        # The model may call a tool twice (e.g. "top sights" and "ski resorts"): keep both, never replace.
+        known = {r.get("name") for r in prev if isinstance(r, dict)}
+        results[name] = prev + [r for r in good if r.get("name") not in known]
+    elif not prev or good:
+        results[name] = out  # but an empty or failed retry never wipes out good results
     errors = [r["error"] for r in out if isinstance(r, dict) and "error" in r]
     src = {r.get("source") for r in out if isinstance(r, dict) and r.get("source")}
-    log(TraceStep(agent="Research", action=f"call {name}",
+    q = f' "{args["query"]}"' if args and args.get("query") else ""
+    log(TraceStep(agent="Research", action=f"call {name}{q}",
                   detail=(f"error: {errors[0]}" if errors else f"{len(out)} results ({', '.join(sorted(src)) or 'n/a'})")))
     return json.dumps(out[:6], default=str)
 

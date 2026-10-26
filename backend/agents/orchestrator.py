@@ -135,6 +135,13 @@ class Session:
             qs.append("I couldn't find flights for that route/date. Try another date, or drive?")
         if any(i.startswith("no_hotel") for i in issues):
             qs.append("No hotel matched. Allow a higher hotel tier?")
+        full_days = s.plan.days[1:-1] if len(s.plan.days) > 2 else []
+        light = [d for d in full_days if sum(it["kind"] in ("attraction", "event") for it in d.items) <= 1]
+        if light and not any(i.startswith("over_budget") for i in issues):
+            dates = ", ".join(f"{d.date:%a %b %d}" for d in light)
+            extra = f" a second {s.spec.activities[0]} day," if s.spec.activities else ""
+            qs.append(f"{dates} {'is' if len(light) == 1 else 'are'} light: I've used the best options in "
+                      f"{s.spec.destination}. Want{extra} a day trip nearby, or keep {'it' if len(light) == 1 else 'them'} free?")
         rough = [d for d in s.plan.days if d.condition in ("freezing", "snowy", "cold")]
         if rough and not qs:
             coldest = min(rough, key=lambda d: d.high_c if d.high_c is not None else 99)
@@ -183,6 +190,8 @@ class Session:
         for tag in ops.get("less", []):
             c.boost[tag] = c.boost.get(tag, 0) - 3
             moves.append(f"less {tag}")
+        if ops.get("activities"):  # "ski" is the request; "more outdoors" is just what it implies
+            ops["more"] = [t for t in ops.get("more", []) if t not in ("outdoors", "nature", "winter")]
         for tag in ops.get("more", []):
             c.boost[tag] = c.boost.get(tag, 0) + 2
             moves.append(f"more {tag}")
@@ -192,6 +201,11 @@ class Session:
                 research.search_more(s.spec, s.research, MORE_QUERIES.get(tag, f"{tag}s"), self.log)
         for act in ops.get("activities", []):
             planned = next(((d, it) for d in s.plan.days for it in d.items if it.get("activity") == act), None)
+            again = re.search(r"\b(another|second|one more|extra|again|two|2)\b", message.lower())
+            if act in s.spec.activities and planned and again:
+                s.spec.activities = s.spec.activities + [act]  # one more day of it
+                moves.append(f"add another {act} day")
+                continue
             if act in s.spec.activities and planned:
                 d, it = planned
                 notes.append(f"{act.capitalize()} is already in your plan: {it['name']} on {d.date:%a %b %d} "
@@ -225,6 +239,7 @@ class Session:
             fields.pop("destination")  # "New York" → "New York City" is not a change
         if "interests" in fields:
             fields["interests"] = sorted(set(s.spec.interests) | set(fields["interests"]))
+        fields.pop("activities", None)  # handled above as edit operations (keeps "another ski day")
         if re.search(r"\bi'?ll drive\b|\bdrive instead\b", message.lower()):
             fields["transport"] = "drive"
         self.provided |= fields.keys()

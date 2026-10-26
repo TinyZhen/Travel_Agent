@@ -125,3 +125,28 @@ def test_asking_for_activity_later_adds_it_or_says_why_not(monkeypatch):
     s.handle("Detroit on Dec 22 for 3 days from Boston")
     st = s.handle("i want to go ski")
     assert "+ Test Ski Hill" in st.plan.changes
+
+
+def test_repeated_tool_call_never_wipes_results():
+    from agents import research
+    results, log = {}, (lambda step: None)
+    research._record("search_attractions", [{"name": "Art Museum"}, {"name": "Zoo"}], results, log)
+    research._record("search_attractions", [], results, log, {"query": "ski resorts"})
+    research._record("search_attractions", [{"name": "Zoo"}, {"name": "Park"}], results, log)
+    assert [a["name"] for a in results["search_attractions"]] == ["Art Museum", "Zoo", "Park"]
+    research._record("search_flights", [{"airline": "A"}], results, log)
+    research._record("search_flights", [{"error": "timeout"}], results, log)
+    assert results["search_flights"] == [{"airline": "A"}]
+
+
+def test_another_activity_day_keeps_the_trip(monkeypatch):
+    from datetime import date
+    from agents.orchestrator import new_session
+    _ski_tool(monkeypatch, SKI)
+    s = new_session(date(2026, 10, 26))
+    st = s.handle("Detroit on Dec 22 for a week from Boston, include a ski trip")
+    nights, before = st.spec.nights, len([it for d in st.plan.days for it in d.items if it["kind"] == "event"])
+    st = s.handle("another ski day please")
+    assert st.spec.nights == nights == 6
+    assert sum(it.get("activity") == "skiing" for d in st.plan.days for it in d.items) == 2
+    assert len([it for d in st.plan.days for it in d.items if it["kind"] == "event"]) == before

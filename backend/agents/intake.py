@@ -122,6 +122,10 @@ def rule_extract(text: str, today: date, feedback: bool = False) -> dict:
     elif m := re.search(r"\b(\d+|\w+)[\s-]+days?\b", t):
         if (n := _num(m[1])) is not None:
             out["nights"] = max(n - 1, 0)
+    elif m := re.search(r"(?<!in )\b(a|one|two|three|\d+)\s+weeks?\b", t):
+        n = 1 if m[1] == "a" else _num(m[1])
+        if n:
+            out["nights"] = n * 7 - 1
     elif "weekend" in t:
         out["nights"] = 2
     elif "day trip" in t:
@@ -160,7 +164,15 @@ def extract(text: str, today: Optional[date] = None, feedback: bool = False) -> 
             if data.get("start_date"):
                 data["start_date"] = date.fromisoformat(data["start_date"])
             data["activities"] = [a for a in data.get("activities") or [] if a in ACTIVITIES]
-            return {k: v for k, v in data.items() if v not in (None, "", [])}, "llm"
+            data = {k: v for k, v in data.items() if v not in (None, "", [])}
+            if feedback:
+                # Mid-conversation, the core trip facts only change when the words clearly say so
+                # ("another ski day" must not turn a week into a day trip).
+                evidence = rule_extract(text, today, feedback=True)
+                for k in ("nights", "start_date", "travelers", "budget_usd", "origin", "destination"):
+                    if k in data and k not in evidence:
+                        data.pop(k)
+            return data, "llm"
         except Exception:
             pass
     return rule_extract(text, today, feedback), "rules"

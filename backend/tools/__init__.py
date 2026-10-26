@@ -241,7 +241,8 @@ def search_attractions(destination: str, interests: Optional[list[str]] = None,
 
 
 PLACE_TAGS = [  # (keyword in Google's place type, tags, indoor, typical cost per person, hours)
-    ("skating", ["winter", "family", "outdoors"], False, 15, 1.5),
+    ("ice skating", ["winter", "family", "outdoors"], False, 15, 1.5),
+    ("ice rink", ["winter", "family", "outdoors"], False, 15, 1.5),
     ("christmas", ["winter", "food", "shopping"], False, 0, 1.5),
     ("holiday", ["winter", "food", "shopping"], False, 0, 1.5),
     ("museum", ["museum"], True, 25, 2.5), ("gallery", ["art", "museum"], True, 0, 1.5),
@@ -254,6 +255,9 @@ PLACE_TAGS = [  # (keyword in Google's place type, tags, indoor, typical cost pe
     ("bridge", ["landmark", "outdoors"], False, 0, 1), ("theater", ["art", "music"], True, 0, 1),
     ("library", ["architecture", "history"], True, 0, 1), ("landmark", ["landmark"], False, 0, 1),
 ]
+
+
+NOT_SIGHTS = ("roller", "escape room", "amusement", "event venue", "trampoline", "bowling", "arcade", "laser tag")
 
 
 def _tags_for(text: str) -> list[str]:
@@ -278,8 +282,11 @@ def _google_maps(c: dict, query: str, interests: list[str]) -> list[dict]:
         hit = next((row for row in PLACE_TAGS if re.search(rf"\b{row[0]}", kind)), None)
         if not hit:
             continue  # unknown place type (venue, shop, office…): not a sight we can schedule reliably
+        if any(x in kind for x in NOT_SIGHTS):
+            continue  # roller rinks, escape rooms, event venues: not what "sights" means
         tags = _tags_for(kind)
         out.append({"name": r.get("title"), "lat": gps["latitude"], "lng": gps["longitude"], "tags": tags,
+                    "category": hit[0],
                     "indoor": hit[2] if hit else False, "cost_per_person": hit[3] if hit else 0,
                     "cost_estimated": True, "hours": hit[4] if hit else 1.5, "rating": r.get("rating"),
                     "match": sum(1 for t in tags if t in interests), "source": "google_maps",
@@ -311,7 +318,7 @@ def _google_attractions(c: dict) -> list[dict]:
 # Place types that really are the activity (so "ski resort" never returns a city park).
 ACTIVITY_TYPES = {
     "skiing": ["ski"], "hiking": ["trail", "hiking", "state park", "nature preserve", "national park"],
-    "ice skating": ["skating", "ice rink"], "kayaking": ["kayak", "canoe", "boat rental"],
+    "ice skating": ["ice skating", "ice rink", "skating rink"], "kayaking": ["kayak", "canoe", "boat rental"],
     "beach": ["beach"], "golf": ["golf"], "spa": ["spa"], "snow tubing": ["tubing", "ski", "snow"],
 }
 
