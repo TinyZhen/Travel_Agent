@@ -11,7 +11,7 @@ C = {"human": "#0f766e", "intake": "#0369a1", "research": "#b45309", "compose": 
 
 fig, ax = plt.subplots(figsize=(13, 6.4), dpi=200)
 ax.set_xlim(0, 13)
-ax.set_ylim(0, 6.4)
+ax.set_ylim(-0.3, 6.4)
 ax.axis("off")
 
 
@@ -43,7 +43,7 @@ arrow(4.7, 4.25, 5.3, 4.25, "spec")
 arrow(7.4, 4.25, 8.0, 4.25, "results")
 arrow(10.0, 4.25, 10.6, 4.25, "plan")
 arrow(11.7, 4.9, 9.0, 4.9, "", C["critic"], rad=0.35)
-ax.text(10.35, 5.62, "issue → safe repair (≤4×)", ha="center", fontsize=8.3, color=C["critic"])
+ax.text(10.35, 5.62, "issue → safe repair (≤5×)", ha="center", fontsize=8.3, color=C["critic"])
 
 # clarification loop
 arrow(3.7, 4.9, 1.15, 4.9, "", C["human"], rad=0.45)
@@ -52,23 +52,31 @@ ax.text(2.45, 5.62, "HITL #1: ask for missing / invalid info", ha="center", font
 # tools
 tools = ["flights", "hotels", "attractions", "events", "weather"]
 for i, t in enumerate(tools):
-    x = 3.3 + i * 1.25
-    ax.add_patch(FancyBboxPatch((x, 1.95), 1.1, 0.6, boxstyle="round,pad=0.02,rounding_size=0.12",
+    x = 2.4 + i * 1.18
+    ax.add_patch(FancyBboxPatch((x, 1.95), 1.05, 0.6, boxstyle="round,pad=0.02,rounding_size=0.12",
                                 fc="white", ec=C["tool"], lw=1.3))
-    ax.text(x + 0.55, 2.25, t, ha="center", va="center", fontsize=9.5, color=INK)
-    arrow(6.35, 3.6, x + 0.55, 2.55, color="#a8a29e")
-ax.text(6.35, 1.62, "live API when a key is set · sample data otherwise (labelled)", ha="center",
+    ax.text(x + 0.525, 2.25, t, ha="center", va="center", fontsize=9.5, color=INK)
+    arrow(6.35, 3.6, x + 0.525, 2.55, color="#a8a29e")
+ax.text(5.1, 1.62, "live API when a key is set · sample data otherwise (labelled)", ha="center",
         fontsize=8.3, color=MUTED)
 
 # approval
-box(10.6, 1.0, 2.2, 1.3, "Traveler reviews", "approve · or say\n\"cheaper\", \"skip X\"…", C["human"])
+box(10.6, 1.0, 2.2, 1.3, "Traveler reviews", "approve · or say \"more\nmuseums\", \"slower pace\"…", C["human"])
+box(8.55, 1.55, 1.85, 0.95, "Feedback agent", "edits, not restarts", C["intake"])
 arrow(11.7, 3.6, 11.7, 2.3, "plan + trace")
-arrow(10.6, 1.65, 9.0, 3.6, "HITL #2: feedback → re-plan", C["human"], rad=-0.25)
+arrow(10.6, 1.95, 10.4, 2.0, "", C["human"])
+arrow(9.5, 2.5, 9.5, 3.6, "", C["intake"])
+ax.text(9.62, 2.95, "HITL #2: revise", fontsize=8.3, color=C["human"])
+arrow(8.55, 2.3, 7.0, 3.6, "", "#a8a29e", rad=0.15, ls="--")
+ax.text(7.35, 2.75, "search more", fontsize=8, color=MUTED)
 box(7.6, 0.2, 2.4, 0.75, "Export .ics", "nothing is booked or paid", C["human"], fill=False)
+box(3.9, 0.2, 3.3, 0.75, "Guide agent", "visit guide per stop · live exhibitions", C["research"])
+arrow(11.7, 1.0, 7.2, 0.3, "", C["research"], rad=-0.35, ls="--")
+ax.text(9.0, -0.12, "for every stop in the plan", ha="center", fontsize=8, color=C["research"])
 arrow(10.6, 1.15, 10.0, 0.6)
 ax.text(10.45, 0.62, "approve", fontsize=8.3, color=INK)
 
-ax.text(0.2, 6.05, "Roameo: multi-agent workflow with two human-in-the-loop checkpoints",
+ax.text(0.2, 6.05, "Roameo: six agents, two human-in-the-loop checkpoints",
         fontsize=14, weight="bold", color=INK)
 fig.savefig(OUT, bbox_inches="tight", facecolor="white")
 print(OUT)

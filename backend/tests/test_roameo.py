@@ -59,3 +59,24 @@ def test_serpapi_parsing(monkeypatch):
     assert [x["name"] for x in h] == ["Hotel A"] and h[0]["tier"] == "budget" and h[0]["total_price"] == 378
     e = tools.search_events("New York", SOON.isoformat(), 2)
     assert len(e) == 1 and e[0]["time"] == "20:00" and e[0]["price_per_person"] is None and "music" in e[0]["tags"]
+
+
+def test_guide_never_invents_exhibitions(monkeypatch):
+    """Exhibitions must come from the web results; anything else the LLM returns is dropped."""
+    from datetime import date
+    import llm
+    import tools
+    from agents import guide
+    from schemas import TripSpec
+    monkeypatch.setattr(llm, "available", lambda: True)
+    monkeypatch.setattr(tools, "_serpapi", lambda p: {"organic_results": [
+        {"title": "Exhibitions", "snippet": "Real Show, Nov 1 – Dec 1", "link": "https://museum.example/exhibitions"}]})
+    monkeypatch.setattr(llm, "chat_json", lambda *a, **k: {
+        "summary": "s", "highlights": [], "tips": [], "plan": [{"minutes": 120, "what": "see it"}],
+        "exhibitions": [{"title": "Real Show", "url": "https://museum.example/exhibitions"},
+                        {"title": "Made-up Show", "url": "https://invented.example"}]})
+    guide._CACHE.clear()
+    spec = TripSpec(origin="Boston", destination="New York", start_date=date(2026, 11, 13))
+    g = guide.guide_for({"name": "Some Museum", "tags": ["museum"], "hours": 2}, {"start": "10:00", "end": "12:00"},
+                        spec, date(2026, 11, 13))
+    assert [x["title"] for x in g["exhibitions"]] == ["Real Show"] and g["web_checked"]

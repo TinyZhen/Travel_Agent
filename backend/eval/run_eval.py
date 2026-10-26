@@ -29,7 +29,8 @@ def tools_called(st) -> set[str]:
 
 
 def items(st) -> list[dict]:
-    return [it for d in st.plan.days for it in d.items] if st.plan else []
+    """Activities only (no meals, arrival or hotel logistics)."""
+    return [it for d in st.plan.days for it in d.items if it["kind"] in ("attraction", "event")] if st.plan else []
 
 
 Check = tuple[str, Callable]
@@ -78,15 +79,16 @@ CASES: list[dict] = [
                  ("gas & parking costed", lambda s, _: {"gas_and_tolls", "parking"} <= s.plan.cost_breakdown.keys())]),
     dict(id="T8", category="Functional", title="Local day trip → no flight or hotel",
          turns=["Day trip in Boston on Nov 7, I live in Boston and like history"],
-         expected="Treated as local: no flight, no hotel; history sights first.",
+         expected="Treated as local: no flight, no hotel; the first sight matches the history interest.",
          checks=[("local transport", lambda s, _: s.spec.transport == "local"),
                  ("no flight/hotel tools", lambda s, _: not {"search_flights", "search_hotels"} & tools_called(s)),
-                 ("history first", lambda s, _: "Freedom Trail" in items(s)[0]["name"])]),
+                 ("history first", lambda s, _: "history" in items(s)[0].get("why", ""))]),
     dict(id="T9", category="Real-world adaptation", title="Rainy day → indoor activities first",
          turns=["New York Nov 6 for 2 nights with museums, from Boston"],
          expected="On days with ≥60% rain the first activity is indoors.",
          checks=[("rain rule respected", lambda s, _: all(
-             d.items[0].get("indoor") for d in s.plan.days if (d.rain_chance or 0) >= 60 and d.items))]),
+             [it for it in d.items if it["kind"] == "attraction"][0].get("indoor") for d in s.plan.days
+             if (d.rain_chance or 0) >= 60 and any(it["kind"] == "attraction" for it in d.items)))]),
     dict(id="T10", category="Human-in-the-loop", title="Feedback: \"cheaper\" really lowers price",
          turns=["Weekend in New York on Nov 13 from Boston, budget $2000", "make it cheaper"],
          expected="Second plan total is strictly lower than the first.",
@@ -132,6 +134,18 @@ CASES: list[dict] = [
          checks=[("critic had to cut", lambda s, _: s.plan.revisions >= 2),
                  ("within budget", lambda s, _: s.plan.total_cost <= 600),
                  ("a museum survives", lambda s, _: any("Museum" in it["name"] for it in items(s)))]),
+    dict(id="T21", category="Human-in-the-loop", title="\"More museums\" revises, doesn't restart",
+         turns=["Weekend in New York on Nov 13 from Boston, we like food and walking, budget $2500",
+                "I want to go to more museums"],
+         expected="At least one museum is added, most of the previous plan is kept, and the changes are reported.",
+         checks=[("museum added", lambda s, _: any(c.startswith("+ ") and "Museum" in c for c in s.plan.changes)),
+                 ("most of the plan kept", lambda s, h: len(set(h[0]["names"]) & {it["name"] for it in items(s)})
+                  >= len(h[0]["names"]) / 2),
+                 ("changes reported", lambda s, _: bool(s.plan.changes))]),
+    dict(id="T22", category="Human-in-the-loop", title="\"Slower pace\" lightens the days",
+         turns=["Chicago on Nov 20 for 3 nights from Boston, budget $3000", "too packed, slower pace please"],
+         expected="Fewer sights per day after the change; days start later.",
+         checks=[("fewer sights", lambda s, h: sum(it["kind"] == "attraction" for it in items(s)) < h[0]["sights"])]),
     dict(id="T17", category="Known limitation", title="City outside demo data (Paris)", known_limitation=True,
          turns=["Paris on Nov 20 for 3 nights from Boston"],
          expected="Offline: cannot resolve the city and asks. Live: resolves via geocoding but has no airport code, so flights fail and the human is asked.",
@@ -149,6 +163,8 @@ def run_case(case: dict) -> dict:
     for msg in case["turns"]:
         st = sess.handle(msg)
         snapshots.append({"status": st.status, "questions": list(st.questions),
+                          "names": [it["name"] for it in items(st)],
+                          "sights": sum(it["kind"] == "attraction" for it in items(st)),
                           "total": st.plan.total_cost if st.plan else None,
                           "hotel": st.plan.hotel["name"] if st.plan and st.plan.hotel else None})
     elapsed = time.time() - t0

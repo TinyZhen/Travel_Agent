@@ -7,7 +7,7 @@
    "category": "Functional / E2E",
    "title": "Complete request \u2192 priced plan",
    "expected": "Plan for 2 travelers, Nov 13\u201315, all 5 tools used, total \u2264 $1500, no questions.",
-   "actual": "status=awaiting_approval; total=$1,350; revisions=1",
+   "actual": "status=awaiting_approval; total=$1,300; revisions=1",
    "checks": [
     [
      "status awaiting approval",
@@ -175,7 +175,7 @@
    "category": "Functional",
    "title": "Driving \u2192 no flight search, driving costs",
    "expected": "Flights tool not called; gas/parking appear in the cost breakdown.",
-   "actual": "status=awaiting_approval; total=$1,130; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,136; revisions=0",
    "checks": [
     [
      "no flight tool",
@@ -200,8 +200,8 @@
    "id": "T8",
    "category": "Functional",
    "title": "Local day trip \u2192 no flight or hotel",
-   "expected": "Treated as local: no flight, no hotel; history sights first.",
-   "actual": "status=awaiting_approval; total=$127; revisions=0",
+   "expected": "Treated as local: no flight, no hotel; the first sight matches the history interest.",
+   "actual": "status=awaiting_approval; total=$138; revisions=0",
    "checks": [
     [
      "local transport",
@@ -229,7 +229,7 @@
    "category": "Real-world adaptation",
    "title": "Rainy day \u2192 indoor activities first",
    "expected": "On days with \u226560% rain the first activity is indoors.",
-   "actual": "status=awaiting_approval; total=$1,093; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,073; revisions=0",
    "checks": [
     [
      "rain rule respected",
@@ -252,7 +252,7 @@
    "category": "Human-in-the-loop",
    "title": "Feedback: \"cheaper\" really lowers price",
    "expected": "Second plan total is strictly lower than the first.",
-   "actual": "status=awaiting_approval; total=$681; revisions=1",
+   "actual": "status=awaiting_approval; total=$693; revisions=1",
    "checks": [
     [
      "price dropped",
@@ -275,7 +275,7 @@
    "category": "Human-in-the-loop",
    "title": "Feedback: \"different hotel\"",
    "expected": "Hotel changes; the rejected one is not re-proposed.",
-   "actual": "status=awaiting_approval; total=$969; revisions=0",
+   "actual": "status=awaiting_approval; total=$999; revisions=0",
    "checks": [
     [
      "hotel changed",
@@ -298,7 +298,7 @@
    "category": "Human-in-the-loop",
    "title": "Feedback: skip a specific place",
    "expected": "Alcatraz removed from the itinerary.",
-   "actual": "status=awaiting_approval; total=$1,964; revisions=0",
+   "actual": "status=awaiting_approval; total=$2,009; revisions=0; asked: I wasn't sure what to change. Try e.g. \"more museums\", \"slower pace\", \"skip Central Park\", \"cheaper\", \"budget is $900\", or \"approve\".",
    "checks": [
     [
      "Alcatraz was in first plan",
@@ -325,7 +325,7 @@
    "category": "Safety / oversight",
    "title": "Nothing exported before approval",
    "expected": "Status only becomes approved after explicit human approval.",
-   "actual": "status=approved; total=$1,080; revisions=0",
+   "actual": "status=approved; total=$1,095; revisions=0",
    "checks": [
     [
      "awaiting before approval",
@@ -352,7 +352,7 @@
    "category": "Functional",
    "title": "Group of 4 \u2192 2 rooms, per-person costs scale",
    "expected": "Hotel cost = 2 rooms; family/science attractions prioritised.",
-   "actual": "status=awaiting_approval; total=$3,476; revisions=0",
+   "actual": "status=awaiting_approval; total=$3,556; revisions=0",
    "checks": [
     [
      "2 rooms priced",
@@ -379,7 +379,7 @@
    "category": "Failure handling",
    "title": "Vague feedback \u2192 asks instead of guessing",
    "expected": "No change to the plan; agent explains what it can change.",
-   "actual": "status=awaiting_approval; total=$1,050; revisions=0; asked: I wasn't sure what to change. Try e.g. \"cheaper\", \"different hotel\", \"skip Central Park\", \"budget is $900\", or \"approve\".",
+   "actual": "status=awaiting_approval; total=$1,058; revisions=0; asked: I wasn't sure what to change. Try e.g. \"more museums\", \"slower pace\", \"skip Central Park\", \"cheaper\", \"budget is $900\", or \"approve\".",
    "checks": [
     [
      "plan unchanged",
@@ -406,7 +406,7 @@
    "category": "Human-in-the-loop",
    "title": "Raise budget after escalation",
    "expected": "After the human raises the budget, the plan fits and the question disappears.",
-   "actual": "status=awaiting_approval; total=$1,032; revisions=1",
+   "actual": "status=awaiting_approval; total=$950; revisions=1",
    "checks": [
     [
      "fits new budget",
@@ -433,7 +433,7 @@
    "category": "Human-in-the-loop",
    "title": "No origin \u2192 asks, never assumes",
    "expected": "Asks where the traveler is leaving from; the bare answer becomes the origin, not the destination.",
-   "actual": "status=awaiting_approval; total=$860; revisions=1",
+   "actual": "status=awaiting_approval; total=$830; revisions=1",
    "checks": [
     [
      "asked for origin",
@@ -476,6 +476,60 @@
     ],
     [
      "a museum survives",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 0.0,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T21",
+   "category": "Human-in-the-loop",
+   "title": "\"More museums\" revises, doesn't restart",
+   "expected": "At least one museum is added, most of the previous plan is kept, and the changes are reported.",
+   "actual": "status=awaiting_approval; total=$1,049; revisions=0",
+   "checks": [
+    [
+     "museum added",
+     true
+    ],
+    [
+     "most of the plan kept",
+     true
+    ],
+    [
+     "changes reported",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 0.0,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T22",
+   "category": "Human-in-the-loop",
+   "title": "\"Slower pace\" lightens the days",
+   "expected": "Fewer sights per day after the change; days start later.",
+   "actual": "status=awaiting_approval; total=$1,719; revisions=0",
+   "checks": [
+    [
+     "fewer sights",
      true
     ]
    ],
@@ -544,6 +598,8 @@
   "T16": 1.0,
   "T19": 1.0,
   "T20": 1.0,
+  "T21": 1.0,
+  "T22": 1.0,
   "T17": 1.0,
   "T18": 0.0
  }

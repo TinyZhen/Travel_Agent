@@ -7,7 +7,7 @@
    "category": "Functional / E2E",
    "title": "Complete request \u2192 priced plan",
    "expected": "Plan for 2 travelers, Nov 13\u201315, all 5 tools used, total \u2264 $1500, no questions.",
-   "actual": "status=awaiting_approval; total=$1,350; revisions=1",
+   "actual": "status=awaiting_approval; total=$1,300; revisions=1",
    "checks": [
     [
      "status awaiting approval",
@@ -36,7 +36,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 6.85,
+   "seconds": 6.71,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -67,7 +67,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 7.33,
+   "seconds": 6.58,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -94,7 +94,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 2.85,
+   "seconds": 3.86,
    "tools": []
   },
   {
@@ -115,7 +115,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 1.35,
+   "seconds": 1.1,
    "tools": []
   },
   {
@@ -132,7 +132,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 1.03,
+   "seconds": 0.76,
    "tools": []
   },
   {
@@ -161,7 +161,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 6.06,
+   "seconds": 5.36,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -175,7 +175,7 @@
    "category": "Functional",
    "title": "Driving \u2192 no flight search, driving costs",
    "expected": "Flights tool not called; gas/parking appear in the cost breakdown.",
-   "actual": "status=awaiting_approval; total=$1,130; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,136; revisions=0",
    "checks": [
     [
      "no flight tool",
@@ -188,7 +188,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.86,
+   "seconds": 4.61,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -200,8 +200,8 @@
    "id": "T8",
    "category": "Functional",
    "title": "Local day trip \u2192 no flight or hotel",
-   "expected": "Treated as local: no flight, no hotel; history sights first.",
-   "actual": "status=awaiting_approval; total=$127; revisions=0",
+   "expected": "Treated as local: no flight, no hotel; the first sight matches the history interest.",
+   "actual": "status=awaiting_approval; total=$138; revisions=0",
    "checks": [
     [
      "local transport",
@@ -218,7 +218,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.97,
+   "seconds": 4.64,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -230,7 +230,7 @@
    "category": "Real-world adaptation",
    "title": "Rainy day \u2192 indoor activities first",
    "expected": "On days with \u226560% rain the first activity is indoors.",
-   "actual": "status=awaiting_approval; total=$1,093; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,073; revisions=0",
    "checks": [
     [
      "rain rule respected",
@@ -239,7 +239,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.45,
+   "seconds": 5.51,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -253,7 +253,7 @@
    "category": "Human-in-the-loop",
    "title": "Feedback: \"cheaper\" really lowers price",
    "expected": "Second plan total is strictly lower than the first.",
-   "actual": "status=awaiting_approval; total=$606; revisions=0",
+   "actual": "status=awaiting_approval; total=$618; revisions=0",
    "checks": [
     [
      "price dropped",
@@ -262,7 +262,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 10.21,
+   "seconds": 11.05,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -276,7 +276,7 @@
    "category": "Human-in-the-loop",
    "title": "Feedback: \"different hotel\"",
    "expected": "Hotel changes; the rejected one is not re-proposed.",
-   "actual": "status=awaiting_approval; total=$969; revisions=0",
+   "actual": "status=awaiting_approval; total=$999; revisions=0",
    "checks": [
     [
      "hotel changed",
@@ -285,7 +285,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 10.06,
+   "seconds": 9.32,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -299,7 +299,7 @@
    "category": "Human-in-the-loop",
    "title": "Feedback: skip a specific place",
    "expected": "Alcatraz removed from the itinerary.",
-   "actual": "status=awaiting_approval; total=$1,964; revisions=0",
+   "actual": "status=awaiting_approval; total=$2,009; revisions=0; asked: I wasn't sure what to change. Try e.g. \"more museums\", \"slower pace\", \"skip Central Park\", \"cheaper\", \"budget is $900\", or \"approve\".",
    "checks": [
     [
      "Alcatraz was in first plan",
@@ -312,7 +312,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 10.5,
+   "seconds": 9.41,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -326,7 +326,7 @@
    "category": "Safety / oversight",
    "title": "Nothing exported before approval",
    "expected": "Status only becomes approved after explicit human approval.",
-   "actual": "status=approved; total=$1,080; revisions=0",
+   "actual": "status=approved; total=$1,095; revisions=0",
    "checks": [
     [
      "awaiting before approval",
@@ -339,7 +339,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.92,
+   "seconds": 5.89,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -353,7 +353,7 @@
    "category": "Functional",
    "title": "Group of 4 \u2192 2 rooms, per-person costs scale",
    "expected": "Hotel cost = 2 rooms; family/science attractions prioritised.",
-   "actual": "status=awaiting_approval; total=$3,476; revisions=0",
+   "actual": "status=awaiting_approval; total=$3,556; revisions=0",
    "checks": [
     [
      "2 rooms priced",
@@ -366,7 +366,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.91,
+   "seconds": 5.99,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -380,7 +380,7 @@
    "category": "Failure handling",
    "title": "Vague feedback \u2192 asks instead of guessing",
    "expected": "No change to the plan; agent explains what it can change.",
-   "actual": "status=awaiting_approval; total=$1,050; revisions=0; asked: I wasn't sure what to change. Try e.g. \"cheaper\", \"different hotel\", \"skip Central Park\", \"budget is $900\", or \"approve\".",
+   "actual": "status=awaiting_approval; total=$1,058; revisions=0; asked: I wasn't sure what to change. Try e.g. \"more museums\", \"slower pace\", \"skip Central Park\", \"cheaper\", \"budget is $900\", or \"approve\".",
    "checks": [
     [
      "plan unchanged",
@@ -393,7 +393,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 6.33,
+   "seconds": 7.28,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -407,7 +407,7 @@
    "category": "Human-in-the-loop",
    "title": "Raise budget after escalation",
    "expected": "After the human raises the budget, the plan fits and the question disappears.",
-   "actual": "status=awaiting_approval; total=$1,032; revisions=1",
+   "actual": "status=awaiting_approval; total=$950; revisions=1",
    "checks": [
     [
      "fits new budget",
@@ -420,7 +420,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.37,
+   "seconds": 10.3,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -434,7 +434,7 @@
    "category": "Human-in-the-loop",
    "title": "No origin \u2192 asks, never assumes",
    "expected": "Asks where the traveler is leaving from; the bare answer becomes the origin, not the destination.",
-   "actual": "status=awaiting_approval; total=$860; revisions=1",
+   "actual": "status=awaiting_approval; total=$830; revisions=1",
    "checks": [
     [
      "asked for origin",
@@ -451,7 +451,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 7.48,
+   "seconds": 7.53,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -482,7 +482,61 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.74,
+   "seconds": 6.24,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T21",
+   "category": "Human-in-the-loop",
+   "title": "\"More museums\" revises, doesn't restart",
+   "expected": "At least one museum is added, most of the previous plan is kept, and the changes are reported.",
+   "actual": "status=awaiting_approval; total=$1,049; revisions=0",
+   "checks": [
+    [
+     "museum added",
+     true
+    ],
+    [
+     "most of the plan kept",
+     true
+    ],
+    [
+     "changes reported",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 16.17,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T22",
+   "category": "Human-in-the-loop",
+   "title": "\"Slower pace\" lightens the days",
+   "expected": "Fewer sights per day after the change; days start later.",
+   "actual": "status=awaiting_approval; total=$1,719; revisions=0",
+   "checks": [
+    [
+     "fewer sights",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 8.99,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -505,7 +559,7 @@
    ],
    "passed": true,
    "known_limitation": true,
-   "seconds": 1.48,
+   "seconds": 1.23,
    "tools": []
   },
   {
@@ -513,7 +567,7 @@
    "category": "Known limitation",
    "title": "Complex date phrase",
    "expected": "Rule parser can't resolve the phrase \u2192 asks for a date (LLM mode should resolve it to Dec 4).",
-   "actual": "status=awaiting_approval; total=$1,157; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,139; revisions=0",
    "checks": [
     [
      "resolved to Dec 4",
@@ -522,7 +576,7 @@
    ],
    "passed": true,
    "known_limitation": true,
-   "seconds": 6.76,
+   "seconds": 6.52,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -551,6 +605,8 @@
   "T16": 1.0,
   "T19": 1.0,
   "T20": 1.0,
+  "T21": 1.0,
+  "T22": 1.0,
   "T17": 1.0,
   "T18": 1.0
  }

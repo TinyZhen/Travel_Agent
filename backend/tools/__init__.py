@@ -197,22 +197,74 @@ def _google_hotels(c: dict, checkin: str, nights: int, travelers: int) -> list[d
 
 
 # ---------------------------------------------------------------- attractions
-def search_attractions(destination: str, interests: Optional[list[str]] = None) -> list[dict]:
+def search_attractions(destination: str, interests: Optional[list[str]] = None,
+                       query: Optional[str] = None) -> list[dict]:
+    """Curated real landmarks for built-in cities; Google Maps (via SerpApi) for anything else,
+    including targeted searches like query="museums" when the traveler asks for more."""
     c = resolve_city(destination)
     if not c:
         return [{"error": f"Unknown city: {destination}"}]
-    if os.getenv("GOOGLE_API_KEY") and not offline():
-        live = _google_attractions(c)
+    interests = [i.lower() for i in (interests or [])]
+    rows = D.ATTRACTIONS.get(c.get("key") or "", [])
+    curated = []
+    for name, lat, lng, tags, indoor, cost, hours in rows:
+        curated.append({"name": name, "lat": lat, "lng": lng, "tags": tags, "indoor": indoor,
+                        "cost_per_person": cost, "cost_estimated": True, "hours": hours,
+                        "match": sum(1 for t in tags if t in interests), "source": "curated"})
+    if query or not curated:
+        live = _google_maps(c, query or "top sights", interests)
+        if query and curated:  # targeted search adds to the curated list, never replaces it
+            names = {a["name"] for a in curated}
+            return sorted(curated, key=lambda a: -a["match"]) + [a for a in live if a["name"] not in names]
         if live:
             return live
-    rows = D.ATTRACTIONS.get(c.get("key") or "", [])
-    interests = [i.lower() for i in (interests or [])]
+    if not curated and os.getenv("GOOGLE_API_KEY") and not offline():
+        return _google_attractions(c)
+    return sorted(curated, key=lambda a: -a["match"])
+
+
+PLACE_TAGS = [  # (keyword in Google's place type, tags, indoor, typical cost per person, hours)
+    ("museum", ["museum"], True, 25, 2.5), ("gallery", ["art", "museum"], True, 0, 1.5),
+    ("art", ["art"], True, 20, 2), ("histor", ["history"], False, 0, 1.5), ("memorial", ["history"], False, 0, 1),
+    ("monument", ["history", "landmark"], False, 0, 1), ("park", ["nature", "outdoors"], False, 0, 1.5),
+    ("garden", ["nature", "outdoors"], False, 0, 1.5), ("zoo", ["family", "nature"], False, 25, 2.5),
+    ("aquarium", ["family", "nature"], True, 40, 2), ("science", ["science", "family"], True, 25, 2.5),
+    ("market", ["food", "shopping"], True, 15, 1.5), ("observ", ["landmark", "architecture"], True, 40, 1.5),
+    ("church", ["architecture", "history"], True, 0, 1), ("cathedral", ["architecture", "history"], True, 0, 1),
+    ("bridge", ["landmark", "outdoors"], False, 0, 1), ("theater", ["art", "music"], True, 0, 1),
+    ("library", ["architecture", "history"], True, 0, 1), ("landmark", ["landmark"], False, 0, 1),
+]
+
+
+def _tags_for(text: str) -> list[str]:
+    t = text.lower()
+    tags = [tag for kw, tags_, *_ in PLACE_TAGS if kw in t for tag in tags_]
+    return list(dict.fromkeys(tags)) or [t.rstrip("s")]
+
+
+def _google_maps(c: dict, query: str, interests: list[str]) -> list[dict]:
+    res = _serpapi({"engine": "google_maps", "type": "search", "q": f"{query} in {c['name']}",
+                    "ll": f"@{c['lat']},{c['lng']},13z"})
+    if not res:
+        return []
     out = []
-    for name, lat, lng, tags, indoor, cost, hours in rows:
-        score = sum(1 for t in tags if t in interests)
-        out.append({"name": name, "lat": lat, "lng": lng, "tags": tags, "indoor": indoor,
-                    "cost_per_person": cost, "hours": hours, "match": score, "source": "demo"})
-    return sorted(out, key=lambda a: -a["match"])
+    for r in res.get("local_results", []):
+        gps = r.get("gps_coordinates") or {}
+        if not gps or (r.get("rating") or 0) < 4.2 or (r.get("reviews") or 0) < 100:
+            continue
+        if _haversine_km(c, {"lat": gps["latitude"], "lng": gps["longitude"]}) > 15:
+            continue
+        kind = " ".join([r.get("type") or ""] + (r.get("types") or [])).lower()
+        hit = next((row for row in PLACE_TAGS if row[0] in kind), None)
+        if not hit:
+            continue  # unknown place type (venue, shop, office…): not a sight we can schedule reliably
+        tags = _tags_for(kind)
+        out.append({"name": r.get("title"), "lat": gps["latitude"], "lng": gps["longitude"], "tags": tags,
+                    "indoor": hit[2] if hit else False, "cost_per_person": hit[3] if hit else 0,
+                    "cost_estimated": True, "hours": hit[4] if hit else 1.5, "rating": r.get("rating"),
+                    "match": sum(1 for t in tags if t in interests), "source": "google_maps",
+                    "url": f"https://www.google.com/maps/place/?q=place_id:{r['place_id']}" if r.get("place_id") else None})
+    return out[:10]
 
 
 def _google_attractions(c: dict) -> list[dict]:
@@ -379,7 +431,8 @@ SCHEMAS = [
     {"type": "function", "function": {
         "name": "search_attractions", "description": "Top attractions, ranked by match with interests.",
         "parameters": {"type": "object", "properties": {
-            "destination": {"type": "string"}, "interests": {"type": "array", "items": {"type": "string"}}},
+            "destination": {"type": "string"}, "interests": {"type": "array", "items": {"type": "string"}},
+            "query": {"type": "string", "description": "optional targeted search, e.g. 'museums' or 'jazz clubs'"}},
             "required": ["destination"]}}},
     {"type": "function", "function": {
         "name": "search_events", "description": "Events (concerts, markets, shows) during the stay.",

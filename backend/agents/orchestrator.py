@@ -25,13 +25,12 @@ from datetime import date
 from typing import Optional
 
 import llm
-from agents import composer, critic, intake, research
+from agents import composer, critic, feedback, intake, research
 from agents.composer import Constraints
 from schemas import SessionState, TraceStep
 from tools import resolve_city
 
 MAX_REPAIRS = 5
-APPROVE_RE = re.compile(r"^\s*(approve|approved|looks good|lgtm|confirm|perfect)\b", re.I)
 RESEARCH_FIELDS = {"origin", "destination", "start_date", "nights", "travelers", "transport", "interests"}
 
 
@@ -141,43 +140,70 @@ class Session:
 
     # -------------------------------------------------------------- feedback
     def _feedback(self, message: str):
-        s, c, t = self.state, self.constraints, message.lower()
-        if APPROVE_RE.search(message):
+        s, c = self.state, self.constraints
+        current = _activity_names(s.plan)
+        ops, method = feedback.parse(message, current)
+        if ops.get("approve"):
             s.status = "approved"
             accepted = f"; human accepted open issues: {'; '.join(s.plan.issues)}" if s.plan.issues else ""
             s.questions = []
             self.log(TraceStep(agent="Orchestrator", action="human approved",
                                detail="itinerary exported; nothing booked automatically" + accepted))
             return
-        moves, target = [], None
-        if re.search(r"\b(cheaper|too expensive|save money|lower cost)\b", t):
+        moves, notes, target = [], [], None
+        stated_budget = intake.rule_extract(message, self.today, feedback=True).get("budget_usd")
+        if ops.get("cheaper") and not (stated_budget and stated_budget > (s.spec.budget_usd or 0)):
             target = s.plan.total_cost - 1
             moves.append(f"cheaper: target below ${s.plan.total_cost:,.0f}")
-        if re.search(r"\b(different|another|other|change the) hotel\b|don'?t like the hotel", t) and s.plan.hotel:
+        if ops.get("different_hotel") and s.plan.hotel:
             c.excluded.add(s.plan.hotel["name"])
             moves.append(f"exclude hotel {s.plan.hotel['name']}")
-        if re.search(r"\b(different|another|other|change the) (flight|airline)\b", t) and s.plan.flight:
+        if ops.get("different_flight") and s.plan.flight:
             c.excluded.add(s.plan.flight["airline"])
             moves.append(f"exclude airline {s.plan.flight['airline']}")
-        if re.search(r"\b(nicer|better|upgrade|luxury) hotel\b", t):
+        if ops.get("upgrade_hotel"):
             c.max_hotel_tier = "luxury"
             s.spec.hotel_preference = "luxury"
             moves.append("upgrade hotel")
-        for d in s.plan.days:
-            for it in d.items:
-                key = next((w for w in re.findall(r"[a-z]+", it["name"].lower())
-                            if len(w) > 3 and w not in {"the", "museum", "national", "park"}), None)
-                if key and re.search(rf"\b(skip|remove|drop|without|no)\b[^.,;]*\b{re.escape(key)}", t):
-                    c.excluded.add(it["name"])
-                    moves.append(f"remove {it['name']}")
+        for name in ops.get("remove_places", []):
+            hit = _match(name, current)
+            if hit:
+                c.excluded.add(hit)
+                c.must_include.discard(hit)
+                moves.append(f"remove {hit}")
+        if ops.get("pace") and ops["pace"] != c.pace:
+            c.pace = ops["pace"]
+            moves.append(f"pace → {c.pace}")
+        for tag in ops.get("less", []):
+            c.boost[tag] = c.boost.get(tag, 0) - 3
+            moves.append(f"less {tag}")
+        for tag in ops.get("more", []):
+            c.boost[tag] = c.boost.get(tag, 0) + 2
+            moves.append(f"more {tag}")
+            unused = [a for a in _candidates(s.research) if tag in a.get("tags", [])
+                      and a["name"] not in current and a["name"] not in c.excluded]
+            if len(unused) < 2:  # not enough left to add: go find more
+                research.search_more(s.spec, s.research, MORE_QUERIES.get(tag, f"{tag}s"), self.log)
+        for name in ops.get("add_places", []):
+            hit = _match(name, [a["name"] for a in _candidates(s.research)])
+            if not hit:
+                found = research.search_more(s.spec, s.research, name, self.log, limit=1)
+                hit = found[0]["name"] if found else None
+            if hit:
+                c.must_include.add(hit)
+                c.excluded.discard(hit)
+                moves.append(f"add {hit}")
+            else:
+                notes.append(f"I couldn't find \"{name}\" in {s.spec.destination}.")
+
         before = s.spec.model_dump()
-        fields, method = intake.extract(message, self.today, feedback=True)
+        fields, _ = intake.extract(message, self.today, feedback=True)
         old, new = resolve_city(s.spec.destination or ""), resolve_city(fields.get("destination") or "")
         if old and new and old["name"] == new["name"]:
             fields.pop("destination")  # "New York" → "New York City" is not a change
         if "interests" in fields:
             fields["interests"] = sorted(set(s.spec.interests) | set(fields["interests"]))
-        if re.search(r"\bi'?ll drive\b|\bdrive instead\b", t):
+        if re.search(r"\bi'?ll drive\b|\bdrive instead\b", message.lower()):
             fields["transport"] = "drive"
         self.provided |= fields.keys()
         s.spec = intake.apply_defaults(intake.merge(s.spec, fields), self.provided)
@@ -186,14 +212,78 @@ class Session:
                            detail="; ".join(moves + [f"{k}→{getattr(s.spec, k)}" for k in sorted(changed)])
                            or "no actionable change found"))
         if not moves and not changed:
-            s.questions = ["I wasn't sure what to change. Try e.g. \"cheaper\", \"different hotel\", "
-                           "\"skip Central Park\", \"budget is $900\", or \"approve\"."]
+            s.plan.changes = []
+            s.questions = notes or ["I wasn't sure what to change. Try e.g. \"more museums\", \"slower pace\", "
+                                    "\"skip Central Park\", \"cheaper\", \"budget is $900\", or \"approve\"."]
             return
         s.questions = intake.validate(s.spec, self.today)
         if s.questions:
             s.status = "needs_clarification"
             return
+        if "destination" in changed:
+            c.previous, c.must_include = set(), set()
+        else:
+            c.previous = set(current)  # revise the current plan instead of starting over
+        c.demote = set()
+        wanted = ops.get("more", [])
+        c.sticky = 5.0 if wanted else 0.6  # "more X": keep what's there, fit X into the gaps first
+        original = copy.deepcopy(s.plan)
         self._plan(research_again=bool(changed & RESEARCH_FIELDS), target=target)
+        for _ in range(3):  # no room for X? drop the least relevant existing stop and try again
+            if not wanted or self._added_with_tag(current, wanted):
+                break
+            victim = self._least_relevant(current, c)
+            if not victim:
+                break
+            c.demote.add(victim)
+            self.log(TraceStep(agent="Composer", action="make room",
+                               detail=f"no time left for more {'/'.join(wanted)}; dropping {victim}"))
+            self._plan(research_again=False, target=target)
+        c.sticky, c.demote = 0.6, set()
+        if wanted and not self._added_with_tag(current, wanted):
+            if all(m.startswith("more ") for m in moves) and not changed:
+                s.plan = original  # nothing gained: don't leave the reshuffle behind
+                self.log(TraceStep(agent="Composer", action="kept plan", detail="no room gained; plan unchanged"))
+            notes.append(f"I couldn't fit more {'/'.join(wanted)} in: every one I found in {s.spec.destination} "
+                         "is already in your plan. Want me to add a day?")
+        new = _activity_names(s.plan)
+        s.plan.changes = [f"+ {n}" for n in new if n not in current] + [f"− {n}" for n in current if n not in new]
+        self.log(TraceStep(agent="Composer", action="revised plan", detail=", ".join(s.plan.changes) or "no changes"))
+        s.questions = notes + s.questions
+
+    def _added_with_tag(self, before: list[str], tags: list[str]) -> bool:
+        tagged = {a["name"] for a in _candidates(self.state.research) if set(a.get("tags", [])) & set(tags)}
+        return any(n in tagged and n not in before for n in _activity_names(self.state.plan))
+
+    def _least_relevant(self, before: list[str], c: Constraints):
+        """The current stop that matters least to this traveler (no interest match, not asked for)."""
+        info = {a["name"]: a for a in _candidates(self.state.research)}
+        keep = set(self.state.spec.interests) | {t for t, w in c.boost.items() if w > 0}
+        pool = [n for n in _activity_names(self.state.plan)
+                if n in info and n in before and n not in c.must_include and n not in c.demote]
+        if not pool:
+            return None
+        return min(pool, key=lambda n: (len(set(info[n].get("tags", [])) & keep), info[n].get("hours", 2)))
+
+
+MORE_QUERIES = {"museum": "museums", "art": "art museums and galleries", "history": "historic sites",
+                "nature": "parks and gardens", "outdoors": "parks", "food": "food markets",
+                "architecture": "architecture landmarks", "science": "science museums",
+                "family": "family attractions", "shopping": "shopping streets", "landmark": "landmarks"}
+
+
+def _activity_names(plan) -> list[str]:
+    return [it["name"] for d in plan.days for it in d.items if it["kind"] in ("attraction", "event")] if plan else []
+
+
+def _candidates(research_results: dict) -> list[dict]:
+    return [a for a in research_results.get("search_attractions") or [] if isinstance(a, dict) and "name" in a]
+
+
+def _match(name: str, options: list[str]):
+    n = name.lower().strip()
+    return next((o for o in options if n == o.lower()), None) or \
+        next((o for o in options if n in o.lower() or o.lower() in n), None)
 
 
 SESSIONS: dict[str, Session] = {}

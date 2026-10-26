@@ -10,7 +10,9 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 import llm
+from agents import guide as guide_agent
 from agents.orchestrator import SESSIONS, new_session
+from schemas import TraceStep
 
 app = FastAPI(title="Roameo")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -42,6 +44,25 @@ def message(req: Message):
         sess.state.status = "error"
         sess.state.questions = [f"Something went wrong: {type(e).__name__}: {e}"]
         return sess.state
+
+
+@app.get("/api/guide")
+def guide(session_id: str, name: str):
+    """Visit guide for one stop of the current plan (generated on demand, cached)."""
+    sess = SESSIONS.get(session_id)
+    if not sess or not sess.state.plan:
+        raise HTTPException(404, "Unknown session.")
+    found = guide_agent.find_stop(sess.state.plan, sess.state.research, name)
+    if not found:
+        raise HTTPException(404, "That stop isn't in the current plan.")
+    place, item, day = found
+    g = guide_agent.guide_for(place, item, sess.state.spec, day)
+    if "error" not in g:
+        sess.log(TraceStep(agent="Guide", action=f"guide for {name}",
+                           detail=f"{len(g.get('exhibitions', []))} current exhibitions from "
+                                  f"{len(g.get('sources', []))} web results" if g.get("web_checked")
+                           else "highlights and visit plan"))
+    return g
 
 
 @app.get("/api/export/{session_id}.ics", response_class=PlainTextResponse)

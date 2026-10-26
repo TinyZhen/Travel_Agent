@@ -43,10 +43,10 @@ def chat(messages: list[dict[str, Any]], tools: Optional[list[dict]] = None,
     return client().chat.completions.create(**kwargs).choices[0].message
 
 
-def chat_json(system: str, user: str) -> dict:
+def chat_json(system: str, user: str, max_tokens: int = 1200) -> dict:
     """Ask for a JSON object and parse it, tolerating ```json fences."""
     msg = chat([{"role": "system", "content": system + "\nReply with a single JSON object only."},
-                {"role": "user", "content": user}], temperature=0)
+                {"role": "user", "content": user}], temperature=0, max_tokens=max_tokens)
     text = msg.content or ""
     match = re.search(r"\{.*\}", text, re.S)
     if not match:

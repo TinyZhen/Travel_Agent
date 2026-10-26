@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import AttractionsMap from "./AttractionsMap";
+import TripMap, { DAY_COLORS } from "./AttractionsMap";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
-type Item = { kind: string; name: string; hours?: number; time?: string; cost: number; price_unknown?: boolean; indoor?: boolean; lat?: number; lng?: number; source?: string; url?: string };
+type Item = { kind: string; name: string; start?: string; end?: string; hours?: number; cost?: number; price_unknown?: boolean; cost_estimated?: boolean; indoor?: boolean; lat?: number; lng?: number; source?: string; url?: string; why?: string; travel?: { mode: string; minutes: number; km: number } | null };
 type Day = { date: string; weather?: string; rain_chance?: number; items: Item[] };
 type State = {
     session_id: string;
@@ -11,7 +11,7 @@ type State = {
     mode: string;
     spec: { origin: string; destination?: string; start_date?: string; nights: number; travelers: number; budget_usd?: number; interests: string[]; transport: string; assumptions: string[] };
     questions: string[];
-    plan?: { flight?: any; hotel?: any; days: Day[]; cost_breakdown: Record<string, number>; total_cost: number; summary: string; issues: string[]; revisions: number };
+    plan?: { flight?: any; hotel?: any; days: Day[]; cost_breakdown: Record<string, number>; total_cost: number; summary: string; issues: string[]; revisions: number; changes: string[] };
     trace: { agent: string; action: string; detail: string }[];
 };
 type Msg = { role: "user" | "agent"; text: string };
@@ -115,7 +115,7 @@ export default function TravelAgent() {
                     {state?.status === "awaiting_approval" && (
                         <div className="flex flex-wrap gap-2 border-t border-stone-100 px-4 pt-3">
                             <button onClick={() => send("approve")} className="rounded-full bg-teal-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-teal-800">✓ Approve plan</button>
-                            {["make it cheaper", "different hotel", "I'll drive"].map((q) => (
+                            {["more museums", "slower pace", "make it cheaper", "different hotel"].map((q) => (
                                 <button key={q} onClick={() => send(q)} className="rounded-full border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100">{q}</button>
                             ))}
                         </div>
@@ -167,6 +167,7 @@ function replyFor(s: State): string {
     if (s.status === "approved") return "Approved! Download your itinerary as a calendar file from the plan panel. Nothing has been booked. Bookings stay in your hands.";
     const parts: string[] = [];
     if (s.status === "awaiting_approval" && s.plan) {
+        if (s.plan.changes?.length) parts.push("Updated your plan:\n" + s.plan.changes.join("\n"));
         parts.push(s.plan.summary);
         if (s.plan.revisions) parts.push(`(The critic revised this plan ${s.plan.revisions}× to fit your constraints.)`);
     }
@@ -181,10 +182,10 @@ function PlanView({ state }: { state: State }) {
     const budget = spec.budget_usd;
     const pct = budget ? Math.min(100, (plan.total_cost / budget) * 100) : 0;
     const over = budget ? plan.total_cost > budget : false;
-    const points = plan.days.flatMap((d) => d.items).filter((i) => i.lat && i.lng);
+    const [day, setDay] = useState<number | null>(null);
     const sources = [plan.flight, plan.hotel, ...plan.days.flatMap((d) => d.items)].filter(Boolean).map((x) => x.source);
     const isDemo = sources.includes("demo");
-    const live = [...new Set(sources.filter((s) => s && s !== "demo"))];
+    const live = [...new Set(sources.filter((s) => s && s !== "demo" && s !== "curated"))];
 
     return (
         <>
@@ -221,6 +222,7 @@ function PlanView({ state }: { state: State }) {
                     </ul>
                 )}
                 {live.length > 0 && <p className="mt-3 text-xs text-teal-700">Live data: {live.join(", ").replace(/_/g, " ")}</p>}
+                {sources.includes("curated") && <p className="mt-1 text-xs text-stone-500">Sights from our curated list show typical admission prices (est.).</p>}
                 {isDemo && <p className="mt-1 text-xs text-amber-700">Items marked as samples use illustrative prices, not live quotes.</p>}
             </div>
 
@@ -243,32 +245,173 @@ function PlanView({ state }: { state: State }) {
                 )}
             </div>
 
+            <TripMap days={plan.days} hotel={plan.hotel} selected={day} onSelect={setDay} />
+
             <div className="space-y-3">
                 {plan.days.map((d, i) => (
-                    <div key={d.date} className="rounded-2xl border border-stone-200 bg-white p-5">
-                        <div className="mb-3 flex items-baseline justify-between">
-                            <h3 className="font-semibold">Day {i + 1} · {new Date(d.date + "T12:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</h3>
-                            {d.weather && <span className={`text-xs ${(d.rain_chance ?? 0) >= 60 ? "text-sky-700 font-medium" : "text-stone-500"}`}>{(d.rain_chance ?? 0) >= 60 ? "☔ " : ""}{d.weather}</span>}
-                        </div>
-                        <ul className="space-y-2">
-                            {d.items.map((it) => (
-                                <li key={it.name} className="flex items-center justify-between gap-3 text-sm">
-                                    <span>
-                                        <span className="mr-2 text-stone-400">{it.kind === "event" ? (it.time ?? "evening") : `${it.hours}h`}</span>
-                                        {it.url ? <a href={it.url} target="_blank" rel="noreferrer" className="underline">{it.name}</a> : it.name}
-                                        {it.indoor && <span className="ml-2 rounded bg-stone-100 px-1.5 text-xs text-stone-500">indoor</span>}
-                                    </span>
-                                    <span className="text-stone-500">{it.price_unknown ? "price on site" : it.cost ? money(it.cost) : "free"}</span>
-                                </li>
-                            ))}
-                            {d.items.length === 0 && <li className="text-sm text-stone-400">Free time</li>}
-                        </ul>
-                    </div>
+                    <DayCard key={d.date} day={d} index={i} active={day === null || day === i} sessionId={state.session_id}
+                        changes={plan.changes ?? []} onFocus={() => setDay(day === i ? null : i)} />
                 ))}
             </div>
-
-            {points.length > 0 && <AttractionsMap attractions={points} />}
         </>
+    );
+}
+
+const KIND_ICON: Record<string, string> = {
+    arrival: "✈️", departure: "✈️", hotel: "🏨", meal: "🍽️", event: "🎟️", attraction: "📍", free: "☕",
+};
+
+function DayCard({ day: d, index: i, active, changes, onFocus, sessionId }: {
+    day: Day; index: number; active: boolean; changes: string[]; onFocus: () => void; sessionId: string;
+}) {
+    const color = DAY_COLORS[i % DAY_COLORS.length];
+    const dayCost = d.items.reduce((sum, it) => sum + (it.cost ?? 0), 0);
+    const added = new Set(changes.filter((c) => c.startsWith("+ ")).map((c) => c.slice(2)));
+    let stop = 0;
+    return (
+        <div className={`rounded-2xl border bg-white p-5 transition ${active ? "border-stone-200" : "border-stone-100 opacity-50"}`}>
+            <button onClick={onFocus} className="mb-4 flex w-full items-baseline justify-between text-left">
+                <h3 className="font-semibold">
+                    <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+                    Day {i + 1} · {new Date(d.date + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+                </h3>
+                <span className="text-xs text-stone-500">
+                    {d.weather && <span className={(d.rain_chance ?? 0) >= 60 ? "font-medium text-sky-700" : ""}>{(d.rain_chance ?? 0) >= 60 ? "☔ " : ""}{d.weather} · </span>}
+                    activities {money(dayCost)}
+                </span>
+            </button>
+            <ol className="relative ml-[58px] border-l border-stone-200">
+                {d.items.map((it, j) => {
+                    const isStop = it.kind === "attraction";
+                    if (isStop) stop += 1;
+                    return (
+                        <li key={`${it.name}-${j}`} className="relative pb-4 pl-5 last:pb-0">
+                            {it.travel && (
+                                <p className="-ml-5 mb-2 pl-5 text-xs text-stone-400">
+                                    {it.travel.mode === "walk" ? "🚶" : "🚇"} {it.travel.minutes} min {it.travel.mode === "walk" ? "walk" : "by transit"} · {it.travel.km} km
+                                </p>
+                            )}
+                            <span className="absolute -left-[62px] w-12 text-right text-xs tabular-nums text-stone-500">{it.start}</span>
+                            <span className="absolute -left-[11px] flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold"
+                                style={isStop ? { background: color, color: "#fff" } : { background: "#f5f5f4" }}>
+                                {isStop ? stop : KIND_ICON[it.kind] ?? "•"}
+                            </span>
+                            <div className="flex items-start justify-between gap-3">
+                                <div className={["meal", "hotel", "free"].includes(it.kind) ? "text-sm text-stone-500" : ""}>
+                                    <p className={isStop || it.kind === "event" ? "font-medium" : "text-sm"}>
+                                        {it.url ? <a href={it.url} target="_blank" rel="noreferrer" className="hover:underline">{it.name}</a> : it.name}
+                                        {added.has(it.name) && <span className="ml-2 rounded bg-teal-100 px-1.5 text-xs font-medium text-teal-800">new</span>}
+                                        {it.indoor && <span className="ml-2 rounded bg-stone-100 px-1.5 text-xs text-stone-500">indoor</span>}
+                                    </p>
+                                    {(isStop || it.kind === "event") && (
+                                        <p className="text-xs text-stone-500">
+                                            {it.start}–{it.end}{it.why ? ` · ${it.why}` : ""}
+                                        </p>
+                                    )}
+                                    {isStop && <StopGuide sessionId={sessionId} name={it.name} />}
+                                </div>
+                                {(isStop || it.kind === "event") && (
+                                    <span className="shrink-0 text-sm text-stone-500">
+                                        {it.price_unknown ? "price on site" : it.cost ? `${money(it.cost)}${it.cost_estimated ? " est." : ""}` : "free"}
+                                    </span>
+                                )}
+                            </div>
+                        </li>
+                    );
+                })}
+            </ol>
+        </div>
+    );
+}
+
+type Guide = {
+    error?: string; summary?: string; minutes?: number; web_checked?: boolean;
+    highlights?: { name: string; why: string }[];
+    exhibitions?: { title: string; dates?: string; url?: string }[];
+    plan?: { minutes: number; what: string }[];
+    tips?: string[]; sources?: { title: string; url: string }[];
+};
+
+// One request per stop, shared across re-renders; guides are generated right after the plan arrives.
+const guideRequests = new Map<string, Promise<Guide>>();
+function loadGuide(sessionId: string, name: string): Promise<Guide> {
+    const key = `${sessionId}|${name}`;
+    if (!guideRequests.has(key)) {
+        guideRequests.set(key, fetch(`${API}/api/guide?session_id=${sessionId}&name=${encodeURIComponent(name)}`)
+            .then((r) => r.json())
+            .catch(() => ({ error: "Guide unavailable." })));
+    }
+    return guideRequests.get(key)!;
+}
+
+function StopGuide({ sessionId, name }: { sessionId: string; name: string }) {
+    const [guide, setGuide] = useState<Guide | null>(null);
+    const [open, setOpen] = useState(false);
+    useEffect(() => {
+        let alive = true;
+        loadGuide(sessionId, name).then((g) => alive && setGuide(g));
+        return () => { alive = false; };
+    }, [sessionId, name]);
+
+    if (!guide) return <p className="mt-1 text-xs text-stone-400">Writing your visit guide…</p>;
+    if (guide.error) return <p className="mt-1 text-xs text-stone-400">{guide.error}</p>;
+    const teaser = [
+        guide.exhibitions?.length ? `${guide.exhibitions.length} exhibition${guide.exhibitions.length > 1 ? "s" : ""} on view` : null,
+        guide.highlights?.[0] ? `Don't miss: ${guide.highlights[0].name}` : null,
+    ].filter(Boolean).join(" · ");
+
+    return (
+        <div className="mt-2">
+            <button onClick={() => setOpen(!open)} className="text-xs font-medium text-teal-700 hover:underline">
+                {open ? "Hide visit guide ▴" : `Visit guide ▾`}{!open && teaser ? <span className="font-normal text-stone-500"> · {teaser}</span> : null}
+            </button>
+            {open && (
+                <div className="mt-2 space-y-3 rounded-xl bg-stone-50 p-4 text-sm">
+                    {guide.summary && <p className="text-stone-700">{guide.summary}</p>}
+                    {!!guide.exhibitions?.length && (
+                        <div>
+                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">On view during your visit</p>
+                            <ul className="space-y-1">
+                                {guide.exhibitions.map((x) => (
+                                    <li key={x.title}>
+                                        <a href={x.url} target="_blank" rel="noreferrer" className="font-medium hover:underline">{x.title}</a>
+                                        {x.dates && <span className="text-stone-500"> · {x.dates}</span>}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {!!guide.highlights?.length && (
+                        <div>
+                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">Don't miss</p>
+                            <ul className="space-y-1">
+                                {guide.highlights.map((h) => <li key={h.name}><span className="font-medium">{h.name}</span><span className="text-stone-600">: {h.why}</span></li>)}
+                            </ul>
+                        </div>
+                    )}
+                    {!!guide.plan?.length && (
+                        <div>
+                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">Your {guide.minutes} minutes</p>
+                            <ol className="space-y-1">
+                                {guide.plan.map((step, k) => (
+                                    <li key={k} className="flex gap-3"><span className="w-12 shrink-0 text-right tabular-nums text-stone-500">{step.minutes} min</span><span>{step.what}</span></li>
+                                ))}
+                            </ol>
+                        </div>
+                    )}
+                    {!!guide.tips?.length && (
+                        <div>
+                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">Tips</p>
+                            <ul className="list-disc space-y-1 pl-5 text-stone-600">{guide.tips.map((t) => <li key={t}>{t}</li>)}</ul>
+                        </div>
+                    )}
+                    <p className="text-xs text-stone-400">
+                        Written by the Guide agent{guide.web_checked ? "; exhibitions only from these web results: " : ". Check opening hours before you go."}
+                        {guide.sources?.map((src, k) => <span key={src.url}>{k ? ", " : ""}<a href={src.url} target="_blank" rel="noreferrer" className="underline">{src.title}</a></span>)}
+                    </p>
+                </div>
+            )}
+        </div>
     );
 }
 

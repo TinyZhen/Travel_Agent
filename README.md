@@ -1,7 +1,8 @@
 # Roameo: agents plan the trip, you make the call
 
 Roameo is a multi-agent travel planner for short, budget-limited trips such as a student's weekend in New York.
-You describe the trip in one sentence. A team of agents asks about anything missing, researches flights,
+You describe the trip in one sentence and get an hour-by-hour plan with each day's route on a map,
+and a visit guide for every stop (what's on, what not to miss, how to spend your time there). A team of agents asks about anything missing, researches flights,
 hotels, sights, events and weather, and builds a day-by-day plan. A critic agent checks the plan against
 your budget. You get the final say: approve the plan, or ask for changes like *"cheaper"*,
 *"different hotel"* or *"skip Alcatraz"*. Roameo **never books or pays for anything** on its own.
@@ -54,9 +55,11 @@ and the result carries `source: "demo"`.
 |---|---|---|---|
 | **Intake** (`agents/intake.py`) | Turn free text into a trip spec (destination, dates, nights, travelers, budget, interests, transport); decide what must be asked | LLM JSON extraction | Regex/rule parser |
 | **Research** (`agents/research.py`) | Decide which tools a trip needs and call them, e.g. no flights for a road trip | Tool-calling loop (≤ 8 steps) + coverage guardrail | Rule policy |
-| **Composer** (`agents/composer.py`) | Pick flight & hotel, schedule days (rain → indoor first), price everything | Deterministic; LLM writes the summary | Deterministic |
+| **Composer** (`agents/composer.py`) | Pick flight & hotel; hour-by-hour days with travel time between stops, meals, events, arrival and departure (rain → indoor first); price everything | Deterministic; LLM writes the summary | Deterministic |
 | **Critic** (`agents/critic.py`) | Check budget, dates, duplicates, weather; choose the next safe repair | Deterministic | Deterministic |
-| **Orchestrator** (`agents/orchestrator.py`) | State machine, revision loop (≤ 4 repairs), human checkpoints, feedback handling | Same | Same |
+| **Feedback** (`agents/feedback.py`) | Turn "more museums", "slower pace", "add the Guggenheim", "skip Alcatraz" into edit operations; send Research to search when more places are needed | LLM JSON + rules | Rules |
+| **Guide** (`agents/guide.py`) | For every stop: what to see, how to spend the visit minute by minute, tips; for museums, current exhibitions **only from web search results**, with links | LLM + Google search (SerpApi) | Not available |
+| **Orchestrator** (`agents/orchestrator.py`) | State machine, critic loop (≤ 5 repairs), human checkpoints, minimal revisions (keep existing stops, make room only when needed, report + / −) | Same | Same |
 
 **Human-in-the-loop checkpoints**
 
@@ -83,6 +86,7 @@ Latest results: [demo mode](docs/evaluation_results.md) and [LLM mode, Claude Ha
 | Method | Path | |
 |---|---|---|
 | `POST` | `/api/message` | `{message, session_id?}` → session state (status, spec, questions, plan, trace) |
+| `GET` | `/api/guide?session_id=…&name=…` | Visit guide for one stop of the current plan |
 | `GET` | `/api/export/{session_id}.ics` | Calendar file; only after the human approves |
 | `GET` | `/api/health` | Which modes and tools are live |
 

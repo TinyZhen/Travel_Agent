@@ -26,10 +26,10 @@ def check(spec: TripSpec, plan: Plan, research: dict, budget: Optional[float] = 
     valid_days = {spec.start_date + timedelta(days=i) for i in range(spec.nights + 1)}
     if any(d.date not in valid_days for d in plan.days):
         issues.append("date_mismatch: itinerary day outside trip dates")
-    names = [it["name"] for d in plan.days for it in d.items]
+    names = [it["name"] for d in plan.days for it in d.items if it["kind"] in ("attraction", "event")]
     if len(names) != len(set(names)):
         issues.append("duplicate: an item is scheduled twice")
-    if plan.days and not any(d.items for d in plan.days):
+    if plan.days and not names:
         issues.append("empty: no activities found")
     for d in plan.days:
         if (d.rain_chance or 0) >= 60 and \

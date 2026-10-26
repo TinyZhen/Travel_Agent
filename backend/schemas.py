@@ -43,6 +43,7 @@ class Plan(BaseModel):
     summary: str = ""
     issues: list[str] = Field(default_factory=list)
     revisions: int = 0
+    changes: list[str] = Field(default_factory=list)  # what a revision added/removed
 
 
 Status = Literal["needs_clarification", "awaiting_approval", "approved", "error"]

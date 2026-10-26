@@ -17,7 +17,8 @@ from schemas import TraceStep, TripSpec
 MAX_STEPS = 8
 
 SYSTEM = """You are the Research agent of a travel planner. Gather what is needed to plan this trip
-by calling tools. Skip tools that are not needed (e.g. no flights when the traveler drives or stays local,
+by calling tools. Use search_attractions without a query for the initial plan (concerts and shows come
+from search_events, not search_attractions). Skip tools that are not needed (e.g. no flights when the traveler drives or stays local,
 no hotels for a day trip). Pass the traveler's interests to attraction and event searches.
 When you have enough, reply with the single word DONE."""
 
@@ -109,3 +110,17 @@ def _llm_loop(spec: TripSpec, results: dict, log: Callable[[TraceStep], None]) -
             # Everything the plan needs is in; skip the extra "anything else?" round trip.
             log(TraceStep(agent="Research", action="finished", detail="all required tools called"))
             return
+
+
+def search_more(spec: TripSpec, results: dict, query: str, log: Callable[[TraceStep], None],
+                limit: int = 6) -> list[dict]:
+    """Targeted follow-up search when the traveler asks for more of something (or a specific place).
+    New places are merged into the existing research results; returns only the new ones."""
+    found = _execute("search_attractions", {"destination": spec.destination,
+                                            "interests": spec.interests, "query": query})
+    known = {a.get("name") for a in results.get("search_attractions") or []}
+    new = [a for a in found if isinstance(a, dict) and a.get("name") and a["name"] not in known][:limit]
+    results.setdefault("search_attractions", []).extend(new)
+    src = sorted({a.get("source") for a in new}) or ["nothing new"]
+    log(TraceStep(agent="Research", action=f"search more: {query}", detail=f"{len(new)} new places ({', '.join(src)})"))
+    return new
