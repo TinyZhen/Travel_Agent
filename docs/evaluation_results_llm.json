@@ -36,7 +36,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 6.18,
+   "seconds": 5.14,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -67,7 +67,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.48,
+   "seconds": 5.62,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -94,7 +94,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 0.94,
+   "seconds": 1.05,
    "tools": []
   },
   {
@@ -115,7 +115,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 0.84,
+   "seconds": 0.93,
    "tools": []
   },
   {
@@ -132,7 +132,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 0.77,
+   "seconds": 0.83,
    "tools": []
   },
   {
@@ -161,7 +161,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.97,
+   "seconds": 5.59,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -188,7 +188,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.38,
+   "seconds": 4.4,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -201,7 +201,7 @@
    "category": "Functional",
    "title": "Local day trip \u2192 no flight or hotel",
    "expected": "Treated as local: no flight, no hotel; the first sight matches the history interest.",
-   "actual": "status=awaiting_approval; total=$138; revisions=0",
+   "actual": "status=awaiting_approval; total=$183; revisions=0",
    "checks": [
     [
      "local transport",
@@ -218,7 +218,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.31,
+   "seconds": 4.29,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -230,7 +230,7 @@
    "category": "Real-world adaptation",
    "title": "Rainy day \u2192 indoor activities first",
    "expected": "On days with \u226560% rain the first activity is indoors.",
-   "actual": "status=awaiting_approval; total=$1,073; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,153; revisions=0",
    "checks": [
     [
      "rain rule respected",
@@ -239,7 +239,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.54,
+   "seconds": 4.7,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -262,7 +262,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 9.19,
+   "seconds": 8.11,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -285,7 +285,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.13,
+   "seconds": 8.41,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -312,7 +312,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.06,
+   "seconds": 8.43,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -339,7 +339,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.51,
+   "seconds": 5.99,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -366,7 +366,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.83,
+   "seconds": 5.13,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -393,7 +393,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 6.66,
+   "seconds": 6.81,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -420,7 +420,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 7.92,
+   "seconds": 7.91,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -451,7 +451,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.7,
+   "seconds": 5.33,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -482,7 +482,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.64,
+   "seconds": 4.57,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -509,7 +509,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 13.28,
+   "seconds": 13.55,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -532,7 +532,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 7.68,
+   "seconds": 8.21,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -559,7 +559,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.53,
+   "seconds": 5.41,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -590,7 +590,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.48,
+   "seconds": 4.77,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -604,7 +604,7 @@
    "category": "Real-world adaptation",
    "title": "Seasonal closures respected",
    "expected": "The river cruise (April\u2013November only) is not scheduled in January.",
-   "actual": "status=awaiting_approval; total=$1,243; revisions=1; asked: Heads-up: expect cold weather (around high 1\u00b0C / low -7\u00b0C, 50% chance of precipitation, sunset 16:44). I put indoor stops first and kept outdoor time short. Pack warm layers.",
+   "actual": "status=awaiting_approval; total=$1,323; revisions=1; asked: Heads-up: expect cold weather (around high 1\u00b0C / low -7\u00b0C, 50% chance of precipitation, sunset 16:44). I put indoor stops first and kept outdoor time short. Pack warm layers.",
    "checks": [
     [
      "no river cruise",
@@ -613,7 +613,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.04,
+   "seconds": 4.88,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -636,7 +636,7 @@
    ],
    "passed": true,
    "known_limitation": true,
-   "seconds": 0.82,
+   "seconds": 0.87,
    "tools": []
   },
   {
@@ -653,7 +653,7 @@
    ],
    "passed": true,
    "known_limitation": true,
-   "seconds": 4.6,
+   "seconds": 4.85,
    "tools": [
     "get_weather",
     "search_attractions",

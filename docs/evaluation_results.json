@@ -229,7 +229,7 @@
    "category": "Real-world adaptation",
    "title": "Rainy day \u2192 indoor activities first",
    "expected": "On days with \u226560% rain the first activity is indoors.",
-   "actual": "status=awaiting_approval; total=$1,073; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,153; revisions=0",
    "checks": [
     [
      "rain rule respected",
@@ -603,7 +603,7 @@
    "category": "Real-world adaptation",
    "title": "Seasonal closures respected",
    "expected": "The river cruise (April\u2013November only) is not scheduled in January.",
-   "actual": "status=awaiting_approval; total=$1,243; revisions=1; asked: Heads-up: expect cold weather (around high 1\u00b0C / low -7\u00b0C, 50% chance of precipitation, sunset 16:44). I put indoor stops first and kept outdoor time short. Pack warm layers.",
+   "actual": "status=awaiting_approval; total=$1,323; revisions=1; asked: Heads-up: expect cold weather (around high 1\u00b0C / low -7\u00b0C, 50% chance of precipitation, sunset 16:44). I put indoor stops first and kept outdoor time short. Pack warm layers.",
    "checks": [
     [
      "no river cruise",
