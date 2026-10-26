@@ -324,7 +324,9 @@ function DayCard({ day: d, index: i, active, changes, onFocus, sessionId }: {
                             <div className="flex items-start justify-between gap-3">
                                 <div className={["meal", "hotel", "free"].includes(it.kind) ? "text-sm text-stone-500" : ""}>
                                     <p className={isStop || it.kind === "event" ? "font-medium" : "text-sm"}>
-                                        {it.url ? <a href={it.url} target="_blank" rel="noreferrer" className="hover:underline">{it.name}</a> : it.name}
+                                        {it.url
+                                            ? <a href={it.url} target="_blank" rel="noreferrer" className="text-teal-800 decoration-teal-300 underline-offset-2 hover:underline">{it.name}<span className="ml-0.5 text-xs text-teal-600">↗</span></a>
+                                            : it.name}
                                         {added.has(it.name) && <span className="ml-2 rounded bg-teal-100 px-1.5 text-xs font-medium text-teal-800">new</span>}
                                         {it.indoor && <span className="ml-2 rounded bg-stone-100 px-1.5 text-xs text-stone-500">indoor</span>}
                                     </p>

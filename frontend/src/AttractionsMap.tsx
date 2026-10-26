@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 
 export const DAY_COLORS = ['#0f766e', '#c2410c', '#7c3aed', '#0369a1', '#be123c', '#4d7c0f'];
 
-type Stop = { name: string; lat: number; lng: number; kind: string; start?: string };
+type Stop = { name: string; lat: number; lng: number; kind: string; start?: string; url?: string };
 type Day = { date: string; items: any[] };
 
 const numberIcon = (n: number | string, color: string) =>
@@ -85,7 +85,7 @@ export default function TripMap({ days, hotel, selected, onSelect }: {
                     ))}
                     {dayStops.map((stops, i) => visible[i] && stops.filter((s) => s.kind !== 'hotel').map((s, j) => (
                         <Marker key={`m${i}-${j}`} position={[s.lat, s.lng]} icon={numberIcon(j + 1, DAY_COLORS[i % 6])}>
-                            <Popup><strong>Day {i + 1} · stop {j + 1}</strong><br />{s.name}{s.start ? <><br />{s.start}</> : null}</Popup>
+                            <Popup><strong>Day {i + 1} · stop {j + 1}</strong><br />{s.url ? <a href={s.url} target="_blank" rel="noreferrer">{s.name} ↗</a> : s.name}{s.start ? <><br />{s.start}</> : null}</Popup>
                         </Marker>
                     )))}
                     {hotel?.lat && (

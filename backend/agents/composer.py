@@ -6,6 +6,7 @@ the LLM, when available, only writes the friendly summary.
 from __future__ import annotations
 
 import math
+from urllib.parse import quote_plus
 from datetime import timedelta
 from typing import Optional
 
@@ -168,6 +169,18 @@ def _over_cap(a: dict, spec: TripSpec, seen: dict[str, int]) -> bool:
     return seen.get(cat, 0) >= cap
 
 
+def maps_link(name: str, city: str) -> str:
+    """A Google Maps link for any place, so every stop on the itinerary is clickable."""
+    q = quote_plus(f"{name}, {city}")
+    return f"https://www.google.com/maps/search/?api=1&query={q}"
+
+
+def food_link(near: Optional[dict]) -> Optional[str]:
+    if not near or near.get("lat") is None:
+        return None
+    return f"https://www.google.com/maps/search/restaurants/@{near['lat']},{near['lng']},16z"
+
+
 def _fill_gaps(items: list[dict], cond: Optional[dict] = None) -> list[dict]:
     """Make long idle stretches explicit instead of leaving silent holes in the day."""
     out = []
@@ -285,7 +298,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
             nonlocal clock, pos, lunch_done, last_sight
             while cap is None or sum(x["kind"] == "attraction" for x in dp.items) < cap:
                 if not lunch_done and clock >= _hm("12:00"):
-                    dp.items.append({"kind": "meal", "name": f"Lunch near {last_sight or base['name']}",
+                    dp.items.append({"kind": "meal", "url": food_link(pos), "name": f"Lunch near {last_sight or base['name']}",
                                      "start": _fmt(clock), "end": _fmt(clock + 60), "cost": 0})
                     clock, lunch_done = clock + 60, True
                 best, best_val = None, None
@@ -320,7 +333,8 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                                  "why": _why(best, spec, c, cond), "winter": "winter" in best.get("tags", []),
                                  "cost": (best.get("cost_per_person") or 0) * travelers,
                                  "cost_estimated": best.get("cost_estimated", False),
-                                 "url": best.get("url"), "source": best.get("source")})
+                                 "url": best.get("url") or maps_link(best["name"], spec.destination),
+                                 "source": best.get("source")})
                 clock, pos, last_sight = arrive + dur, best, best["name"]
                 if best.get("category"):
                     seen[best["category"]] = seen.get(best["category"], 0) + 1
@@ -343,7 +357,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                                     + ("; rain is typical that day, check conditions before you go"
                                        if cond["label"] == "rainy" and "winter" in a.get("tags", []) else ""),
                              "cost": (a.get("cost_per_person") or 0) * travelers, "cost_estimated": True,
-                             "url": a.get("url"), "source": a.get("source")})
+                             "url": a.get("url") or maps_link(a["name"], spec.destination), "source": a.get("source")})
             clock, pos, last_sight = arrive + dur, a, a["name"]
             if not lunch_done and arrive < _hm("12:30") < clock:
                 lunch_done = True
@@ -361,7 +375,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
             clock = max(clock, ev) + 120
         fill(end)
         if not lunch_done and clock > _hm("12:00") and clock < _hm("16:00"):
-            dp.items.append({"kind": "meal", "name": f"Lunch near {last_sight or base['name']}",
+            dp.items.append({"kind": "meal", "url": food_link(pos), "name": f"Lunch near {last_sight or base['name']}",
                              "start": _fmt(clock), "end": _fmt(clock + 60), "cost": 0})
             clock += 60
 
@@ -375,7 +389,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
         else:
             if event and event.get("time"):
                 ev = _hm(event["time"])
-                dp.items.append({"kind": "meal", "name": f"Dinner near {last_sight or base['name']}",
+                dp.items.append({"kind": "meal", "url": food_link(pos), "name": f"Dinner near {last_sight or base['name']}",
                                  "start": _fmt(ev - 90), "end": _fmt(ev - 20), "cost": 0})
                 used.add(event["name"])
                 dp.items.append({"kind": "event", "name": event["name"], "start": event["time"],
@@ -385,7 +399,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                                  "price_unknown": event.get("price_per_person") is None,
                                  "url": event.get("url"), "source": event.get("source")})
             else:
-                dp.items.append({"kind": "meal", "name": f"Dinner near {last_sight or base['name']}",
+                dp.items.append({"kind": "meal", "url": food_link(pos), "name": f"Dinner near {last_sight or base['name']}",
                                  "start": _fmt(max(clock + 30, _hm("19:00"))),
                                  "end": _fmt(max(clock + 30, _hm("19:00")) + 75), "cost": 0})
         dp.items = _fill_gaps(dp.items, cond)
