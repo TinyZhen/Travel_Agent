@@ -89,6 +89,16 @@ Where sources disagree, the results files and the code win. These disagreements 
 - A typed reply that starts with words such as "approve" or "looks good" counts as approval in both modes (`backend/agents/feedback.py`, line 40), and with the AI on the AI can also read a reply as approval. The calendar file still downloads only after approval.
 - The repository has no licence file, so the deck, the poster and the report say the code is public on GitHub, not that anyone may copy it.
 
+## Checks at the last build
+
+Run on 26 October 2026 with the commands above.
+
+- The writing check finds 0 hits in all eight files it reads.
+- The deck has 17 pages and 0 Overfull boxes, the poster 1 page and 0 Overfull boxes, and every figure builds with 0 errors and 0 Overfull boxes.
+- The script runs about 383 seconds at 140 words a minute (384 planned, 420 at most). The poster pitch runs about 113 seconds (120 at most).
+- Empty space, measured with the audit's method (the largest empty rectangle as a share of the content area). Before the revision the slides ranged from 0.10 to 0.32 and the poster was 0.02. Now every slide is at 0.084 or less, and the poster is 0.013. The 0.084 on the weather backup is white space inside a screenshot.
+- The team's original report is unchanged, with sha256 0d9d2572 at the start.
+
 ## UMass Boston identity
 
 The owner asked for the UMass Boston look. The affiliation line "Department of Computer Science, University of Massachusetts Boston" sits under the names on the title slide, in the poster header and on the report's title page. The logos are used at their own resolution and only scaled down. The palette is near black type on white, UMB blue #005A8B for structure, the slides' primary #08457E for titles, dark navy #132245 only for the poster header, UMB orange #FF791F only for the $180 gap, and green #2E7D32 only for a passed test or an approved plan. Roameo's teal appears only inside screenshots. This reverses the earlier rule of no institution names or logos, so the owner should confirm it. The logos show the authors' affiliation and do not mean the university endorses Roameo.
