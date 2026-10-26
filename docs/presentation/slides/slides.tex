@@ -3,20 +3,25 @@
 % To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 %
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% Roameo: agents plan the trip, you make the call. Seven-minute presentation (420 s at most: the
-% title and ten timed slides, then backup slides). Authors: Zhen Lu and Noctis Zhang.
-% Speaker notes for each slide live in the \note{...} blocks and match pres-note.md.
-% Uncomment the \setbeameroption line below to see them.
+% Roameo plans your trip and lets you decide on the money. Seven-minute presentation (420 s at
+% most, eleven timed slides, then six backup slides). Authors Zhen Lu and Noctis Zhang, Department
+% of Computer Science, University of Massachusetts Boston.
 %
-% The story and the figures follow ../STORY_PLAN.md: assertion and evidence (a full-sentence title,
-% one visual, at most two short lines). Every number comes from the repository: the evaluation
-% files docs/evaluation_results(.md, .json) and docs/evaluation_results_llm(.md, .json), README.md,
-% the code under backend/, and one real run of the app shown in docs/screenshots/.
-% Build: latexmk -pdf slides.tex (figures first: see ../README.md).
+% The story follows ../REVISION_PLAN.md. One use case (Alex, a student we made up, on one real
+% live run of the app, docs/screenshots/03_over_budget_escalation.png) carries three main ideas,
+% each in three parts: AI agents do the legwork, code checks the money, you make the call. The
+% ideas are announced on slide 3, delivered on slides 4 to 6 and repeated on slide 11.
+% Every number comes from the repository (README.md, docs/evaluation_results*.md and .json,
+% backend/, docs/screenshots/) or from the report's cited sources.
+%
+% Speaker notes live in the \note{...} blocks. They are generated from pres-note.md by
+% ../tools/sync_notes.py, so edit the script and run the tool. Uncomment \setbeameroption below
+% to see them.
+% Build: latexmk -pdf slides.tex (figures first, see ../README.md).
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 \documentclass[
-t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhang},pdftitle={Roameo: agents plan the trip, you make the call},pdfsubject={Seven-minute project presentation}}
+t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhang},pdftitle={Roameo plans your trip and lets you decide on the money},pdfsubject={Seven minute project presentation}}
 ]{beamer}
 % Keep the PDF metadata to title, author and subject.
 \pdfsuppressptexinfo=-1
@@ -26,376 +31,605 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
 \usepackage{appendixnumberbeamer} % backups are not counted in the slide total
 \usepackage{fontawesome5}
 \usepackage{qrcode}
+\usetikzlibrary{arrows.meta,positioning,calc}
 
 % \setbeameroption{show notes} % uncomment to render speaker notes alongside slides
 
 % The template ships \emphasize as an environment. Redefine it as a one-argument command.
 \renewcommand{\emphasize}[1]{\textcolor{primary}{#1}}
 
-\graphicspath{{figures/}{../screenshots/}}
+\graphicspath{{figures/}{../screenshots/}{logos/}}
 \hyphenpenalty=10000
 \exhyphenpenalty=10000
 
-% Colours shared with figures/figstyle.tex: the app's teal is the brand, one warm accent for the
-% budget gap only, green for a confirmed result.
-\definecolor{primary}{HTML}{0F766E}
-\definecolor{accent}{HTML}{C2410C}
-\definecolor{ok}{HTML}{4D7C0F}
-\definecolor{ink}{HTML}{1F1F1F}
+% UMass Boston palette, the same as figures/figstyle.tex. Near-black type on white, UMB blue for
+% structure, the slides' primary blue for titles, one warm accent (UMB orange) only for the $180
+% gap, green only for a passed test or an approved plan.
+\definecolor{primary}{HTML}{08457E}
+\definecolor{umb}{HTML}{005A8B}
+\definecolor{umbsoft}{HTML}{E9F2F8}
+\definecolor{navy}{HTML}{132245}
+\definecolor{accent}{HTML}{FF791F}
+\definecolor{accentink}{HTML}{C4540A}
+\definecolor{accentsoft}{HTML}{FFF1E6}
+\definecolor{ok}{HTML}{2E7D32}
+\definecolor{oksoft}{HTML}{E8F3E9}
+\definecolor{ink}{HTML}{1A1A1A}
 \definecolor{muted}{HTML}{5F6368}
-\definecolor{rulegrey}{HTML}{C4C4C4}
+\definecolor{faint}{HTML}{F4F5F7}
 \setbeamercolor{frametitle}{fg=primary}
 \setbeamercolor{normal text}{fg=ink}
+\setbeamercolor{title}{fg=primary}
 
-% Small caption under a figure, and the one or two supporting lines of a slide.
-\newcommand{\figcaption}[1]{{\scriptsize\color{muted}#1\par}}
-\newcommand{\support}[1]{{\small #1\par}}
-% The ticking budget: a small wallet marker in the top right corner of the story slides.
-\newcommand{\budget}[2]{%
-  \begin{tikzpicture}[remember picture, overlay]
-    \node[anchor=north east, inner sep=0pt, font=\small\bfseries, text=#1] at ([xshift=-15mm, yshift=-5mm]current page.north east) {\faWallet\hspace{0.45em}#2};
-  \end{tikzpicture}}
-% A rounded option button, as in the app.
-\newcommand{\option}[1]{\tikz[baseline=(b.base)]\node[draw=primary, line width=0.8pt, rounded corners=7pt, inner sep=4pt, text=ink, font=\small] (b) {#1};}
+% TikZ's align=left fixes the word space from the node's own font, so text set smaller or larger
+% inside a node gets odd gaps. Use each font's own word space instead.
+\tikzset{every node/.append style={execute at begin node={\spaceskip=0pt\xspaceskip=0pt\relax}}}
+
+% The three idea marks, as in the figures.
+\newcommand{\markagents}{\faSearch}
+\newcommand{\markcode}{{\usefont{OT1}{cmss}{bx}{n}\char6}}
+\newcommand{\markyou}{\faUserCheck}
+
+% Frame title: small capitals as in the Elegant template, close to the top, no rule.
+\setbeamertemplate{frametitle}{\vspace*{0.42cm}{\usebeamercolor[fg]{frametitle}\usebeamerfont{frametitle}\large\insertframetitle\par}\vspace*{0.22cm}}
+% Footer: the UMass Boston word mark on the left, the event in the middle, the slide number.
+\setbeamertemplate{footline}{%
+  \hspace*{15mm}\raisebox{-0.5mm}{\includegraphics[height=0.62cm]{Umass_boston_textlogo.png}}%
+  \hfill{\scriptsize\color{muted}Zhen Lu and Noctis Zhang, PEAAII AI Applications Hackathon 2026}%
+  \hfill{\scriptsize\color{muted}\insertframenumber{} / \inserttotalframenumber}\hspace*{15mm}%
+  \par\vspace*{0.3cm}}
+
+% Small helpers. One or two supporting lines per slide, a part label (a, b, c), a muted note.
+\newcommand{\support}[1]{{\normalsize #1\par}}
+\newcommand{\partlabel}[2]{{\normalsize\bfseries\textcolor{umb}{#1}\enspace\textcolor{ink}{#2}\par}}
+\newcommand{\figcaption}[1]{{\footnotesize\color{muted}#1\par}}
+% A screenshot, scaled down only, framed by a thin line in the given colour.
+\newcommand{\shot}[3][rulecol]{{\setlength{\fboxsep}{0pt}\setlength{\fboxrule}{#2}\fcolorbox{#1}{white}{#3}}}
+\colorlet{rulecol}{faint}
+% A choice button, as in the app.
+\newcommand{\choice}[1]{\tikz[baseline=(b.base)]\node[fill=white, draw=accent, line width=1pt, rounded corners=8pt, inner sep=4.5pt, text=ink, font=\normalsize\bfseries] (b) {#1};}
 
 \title[Roameo]{Roameo}
-\subtitle{Agents plan the trip. You make the call.}
-\author[Zhen Lu and Noctis Zhang]{Zhen Lu \quad Noctis Zhang}
-\date{PEAAII AI Applications Hackathon 2026, Agentic AI. October 2026}
+\author[Zhen Lu and Noctis Zhang]{Zhen Lu and Noctis Zhang}
+\date{October 2026}
 
 \begin{document}
-\hypersetup{pdftitle={Roameo: agents plan the trip, you make the call}}
+\hypersetup{pdftitle={Roameo plans your trip and lets you decide on the money}}
 
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 1. TITLE (13 s)
+% 1. TITLE
 {
 \setbeamertemplate{footline}{}
 \begin{frame}
-  \vspace{1.25cm}
-  \begin{columns}[T]
-    \begin{column}{0.60\textwidth}
-      {\footnotesize\color{muted}PEAAII AI Applications Hackathon 2026, Agentic AI\par}
-      \vspace{0.5cm}
-      {\fontsize{40}{44}\selectfont\bfseries\color{primary}Roameo\par}
-      \vspace{0.2cm}
-      {\Large\color{ink}Agents plan the trip.\\You make the call.\par}
-      \vspace{0.45cm}
-      {\small An AI trip planner for \textbf{students and budget travellers}. It does the research and the math, and \textbf{asks you} before it goes over your budget.\par}
-      \vspace{0.45cm}
-      {\normalsize\bfseries Zhen Lu \quad Noctis Zhang\par}
-      {\footnotesize\color{muted}October 2026\par}
-      \vspace{0.35cm}
-      \begin{tikzpicture}[x=1cm, y=1cm]
-        \node[anchor=north west, inner sep=0pt] at (0,0) {\qrcode[height=1.8cm]{https://roameo-l13h.onrender.com/}};
-        \node[anchor=north west, inner sep=0pt, align=left, font=\scriptsize] at (2.0,0) {\textbf{Try it}\\roameo-l13h\\.onrender.com};
-        \node[anchor=north west, inner sep=0pt] at (4.4,0) {\qrcode[height=1.8cm]{https://github.com/TinyZhen/Travel_Agent}};
-        \node[anchor=north west, inner sep=0pt, align=left, font=\scriptsize] at (6.4,0) {\textbf{Code}\\github.com\\/TinyZhen\\/Travel\_Agent};
-      \end{tikzpicture}
-    \end{column}
-    \begin{column}{0.38\textwidth}
-      \vspace{0.1cm}
-      \includegraphics[width=\linewidth]{plan.png}
-      \figcaption{A plan in the app: total against the budget, flight, hotel and each day's route.}
-    \end{column}
-  \end{columns}
+  \begin{tikzpicture}[remember picture, overlay, x=1cm, y=1cm]
+    % the logo at its native resolution, only scaled down, with its empty margin trimmed
+    \node[anchor=north west, inner sep=0pt] at ([xshift=1.5cm, yshift=-0.8cm]current page.north west)
+      {\includegraphics[width=4.3cm, trim=118 172 118 172, clip]{Blue-UMB-logo-lockup.png}};
+    \node[anchor=north east, inner sep=0pt, align=right, font=\normalsize, text=muted] at ([xshift=-1.5cm, yshift=-1.05cm]current page.north east)
+      {PEAAII AI Applications Hackathon 2026\\Agentic AI, October 2026};
+    % the name and the promise
+    \node[anchor=north west, inner sep=0pt, font=\fontsize{62}{66}\selectfont\bfseries, text=primary] at ([xshift=1.4cm, yshift=-3.2cm]current page.north west) {Roameo};
+    \node[anchor=north west, inner sep=0pt, font=\LARGE, text=ink, text width=12.6cm, align=left] at ([xshift=1.5cm, yshift=-5.3cm]current page.north west)
+      {plans your trip and lets you decide on the money};
+    % the three ideas, the tagline
+    \node[anchor=north west, inner sep=0pt, text width=12.2cm, align=left, font=\huge] at ([xshift=1.5cm, yshift=-6.7cm]current page.north west)
+      {\makebox[1.15cm][l]{\textcolor{umb}{\markagents}}\textbf{AI agents do the legwork.}\par\vspace{1.5mm}
+       \makebox[1.15cm][l]{\textcolor{umb}{\markcode}}\textbf{Code checks the money.}\par\vspace{1.5mm}
+       \makebox[1.15cm][l]{\textcolor{umb}{\markyou}}\textbf{You make the call.}\par\vspace{2mm}
+       {\large\color{muted}An agent here is an AI helper with one job.}};
+    % the authors and their department
+    \node[anchor=south west, inner sep=0pt, text width=13cm, align=left] at ([xshift=1.5cm, yshift=0.75cm]current page.south west)
+      {{\Large\bfseries Zhen Lu \quad Noctis Zhang\par}\vspace{1.2mm}
+       {\large Department of Computer Science, University of Massachusetts Boston\par}};
+    % two QR codes, try it and the code
+    \node[anchor=north, inner sep=0pt] (q1) at ([xshift=-3.9cm, yshift=-2.55cm]current page.north east) {\qrcode[height=3.3cm]{https://roameo-l13h.onrender.com/}};
+    \node[anchor=north, inner sep=0pt, font=\small, align=center] at ([yshift=-0.15cm]q1.south) {\textbf{Try it}\\roameo-l13h.onrender.com};
+    \node[anchor=north, inner sep=0pt] (q2) at ([xshift=-3.9cm, yshift=-7.05cm]current page.north east) {\qrcode[height=3.3cm]{https://github.com/TinyZhen/Travel_Agent}};
+    \node[anchor=north, inner sep=0pt, font=\small, align=center] at ([yshift=-0.15cm]q2.south) {\textbf{Code}\\github.com/TinyZhen/Travel\_Agent};
+  \end{tikzpicture}
   \note{
-    \textbf{(13s, ends 0:13)} Hi, we are Zhen Lu and Noctis Zhang. This is Roameo, an AI trip
-    planner for students and budget travellers. Its agents plan the trip, and you make the call.
+    \textbf{(15 s, ends at 0 min 15 s)} Hi, we are Zhen Lu and Noctis Zhang, from computer
+    science at UMass Boston. This is Roameo, a trip planner. AI agents do the legwork, code
+    checks the money, and you make the call.
   }
 \end{frame}
 }
 
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 2. THE PERSONA AND THE CONSTRAINT (31 s)
-\begin{frame}{Alex has \$600 and one sentence}
-  \budget{ink}{\$600 budget}
-  \vfill
-  \begin{columns}[c]
-    \begin{column}{0.66\textwidth}
-      \includegraphics[width=\linewidth]{fig_persona.pdf}
+% 2. THE PROBLEM, TOLD THROUGH ALEX
+\begin{frame}{Alex has \$600 for four days in Chicago and types one sentence}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.27\textwidth}
+      \centering
+      \vspace{1mm}
+      {\fontsize{96}{96}\selectfont\textcolor{umb}{\faUserGraduate}\par}
+      \vspace{2.5mm}
+      {\LARGE\bfseries Alex\par}
+      \vspace{0.5mm}
+      {\normalsize\color{muted}a student we made up\par}
+      \vspace{2mm}
+      {\large \$600, 4 days,\\Chicago\par}
     \end{column}
-    \begin{column}{0.32\textwidth}
-      \includegraphics[width=\linewidth]{start.png}
-      \figcaption{The request is the app's own example on its start screen.}
+    \begin{column}{0.71\textwidth}
+      \figcaption{What Alex types in Roameo}
+      \vspace{1mm}
+      \includegraphics[width=10.4cm]{alex_sentence.png}\par
+      \vspace{6mm}
+      \figcaption{What has to add up, and again after every change}
+      \vspace{1.5mm}
+      \begin{tikzpicture}[x=1cm, y=1cm, cost/.style={fill=umbsoft, rounded corners=3pt, minimum width=1.9cm, minimum height=1.6cm, align=center, font=\large, text=ink, inner sep=2pt}, op/.style={font=\Large\bfseries, text=umb}]
+        \node[cost] at (0.95,0) {\faPlane\\flights};
+        \node[op] at (2.15,0) {+};
+        \node[cost] at (3.35,0) {\faBed\\hotel};
+        \node[op] at (4.55,0) {+};
+        \node[cost] at (5.75,0) {\faLandmark\\sights};
+        \node[op] at (6.95,0) {+};
+        \node[cost] at (8.15,0) {\faUtensils\\food};
+        \node[op] at (9.35,0) {+};
+        \node[cost] at (10.55,0) {\faBus\\transit};
+        \node[anchor=north west, font=\Large, text=ink, inner sep=0pt] at (0.0,-1.05) {\textbf{= ?}\quad within the \textbf{\$600}, or not?};
+      \end{tikzpicture}\par
     \end{column}
   \end{columns}
-  \vfill
-  {\normalsize\bfseries A chat reply that adds the prices itself can say \emph{it fits your budget} with nobody checking the sum.\par}
-  \vspace{0.15cm}
-  \figcaption{Alex is an illustration. Booking.com's 2025 Global AI Sentiment Report, cited in our project report: 89\% of travellers want AI help planning trips, 12\% are comfortable with AI deciding alone.}
-  \vspace{0.1cm}
+  \vspace{10mm}
+  {\Large\bfseries A chat reply can do the sum itself and say it fits your budget, with nobody checking it.\par}
+  \vspace{3mm}
+  \vspace{1mm}
+  {\large 89\% of travelers want AI help to plan a trip, but only 12\% are happy to let AI decide alone [2].\par}
+  \vspace{3mm}
+  \figcaption{[2] Booking.com, Global AI Sentiment Report, July 2025. Alex is an illustration. The run on the next slides is real.}
   \note{
-    \textbf{(31s, ends 0:44)} Meet Alex, a student we made up for this talk. Alex has six
-    hundred dollars for a long weekend and types one sentence: Chicago for four days, budget six
-    hundred dollars. Simple to say. But flights, a hotel, sights, food and transit all have to
-    add up, around the weather and the dates, and again after every change. A chat reply can do
-    that sum itself and say it fits, with nobody checking.
+    \textbf{(35 s, ends at 0 min 50 s)} Meet Alex, a student we made up for this talk. Alex has
+    six hundred dollars for four days in Chicago, and types one sentence. But flights, a hotel,
+    sights, food and transit all have to add up, again after every change. A chat reply can do
+    that sum itself and say it fits, with nobody checking. And in one survey, eighty nine
+    percent wanted AI help to plan, but only twelve percent were happy to let it decide alone.
   }
 \end{frame}
 
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 3. THE STORY (42 s)
-\begin{frame}{One sentence becomes a checked plan, and Alex keeps the final say}
-  \budget{ink}{\$600 budget}
-  \vspace{0.35cm}
-  \begin{center}
-    \includegraphics[width=\textwidth]{fig_story.pdf}
-  \end{center}
-  \vfill
-  \support{An \textbf{agent} is an AI helper with one job. The \textbf{critic} is plain code that checks the cost against the budget.}
-  \figcaption{Every word and number above is from one real run of the app with live flights, hotels and events (the app's screenshot of this run is on the next slides).}
-  \vspace{0.15cm}
+% 3. THE THREE IDEAS, ANNOUNCED
+\begin{frame}{Roameo rests on three simple ideas}
+  \vspace{1mm}
+  \centering
+  \includegraphics[width=\textwidth]{fig_ideas.pdf}
   \note{
-    \textbf{(43s, ends 1:27)} Here is one real run of the app. First, Roameo asked back: where
-    are you leaving from, and what date? It never guesses a city or a date. Alex answered: from
-    Boston, leaving November twentieth. Then the agents went to work. An agent is an AI helper
-    with one job. They found eight flights, eighteen hotels and fifty nine events, and saw rain
-    and cold typical for those dates. The first plan cost one thousand two hundred thirty five
-    dollars. The critic cut it to seven hundred eighty. Still one hundred eighty over. So Roameo
-    did not decide. It asked Alex.
+    \textbf{(19 s, ends at 1 min 09 s)} Roameo rests on three simple ideas. AI agents do the
+    legwork. Code checks the money. You make the call. An agent here is an AI helper with one
+    job. Each idea has three parts, and we will follow Alex through all of them.
   }
 \end{frame}
 
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 4. THE SYSTEM (59 s)
-\begin{frame}{AI agents gather, plain code checks the money, you decide twice}
-  \vspace{-0.1cm}
-  \begin{center}
-    \includegraphics[height=8.55cm]{fig_system.pdf}
-  \end{center}
+% 4. IDEA 1, AI AGENTS DO THE LEGWORK
+\begin{frame}{\textcolor{umb}{\markagents}\enspace AI agents ask first, then choose what to search}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.49\textwidth}
+      \partlabel{a}{They ask for what is missing}
+      \vspace{1.5mm}
+      \shot{0.6pt}{\includegraphics[width=8.1cm]{alex_ask.png}}\par
+      \vspace{4mm}
+      {\large It never guesses where you leave from or when, because a guessed city or date gives a useless plan.\par}
+      \vspace{4mm}
+      \figcaption{Alex's live run. An agent here is an AI helper with one job.}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \partlabel{b}{They choose which searches the trip needs}
+      \vspace{1.5mm}
+      \begin{tikzpicture}[x=1cm, y=1cm, num/.style={font=\fontsize{34}{34}\selectfont\bfseries, text=umb, inner sep=0pt, anchor=south}, lab/.style={font=\large, text=ink, inner sep=0pt, anchor=north}]
+        \fill[umbsoft, rounded corners=3pt] (0,0) rectangle (8.2,2.6);
+        \node[num] at (1.35,1.2) {8};   \node[lab] at (1.35,1.05) {flights};
+        \node[num] at (4.1,1.2) {18};   \node[lab] at (4.1,1.05) {hotels};
+        \node[num] at (6.85,1.2) {59};  \node[lab] at (6.85,1.05) {events};
+      \end{tikzpicture}\par
+      \vspace{1.5mm}
+      \support{Past years' weather said cold and rainy, so it also looked for indoor places, holiday markets and ice skating.}
+      \vspace{5mm}
+      \partlabel{c}{They turn your plain words into changes}
+      \vspace{1.5mm}
+      \shot{0.6pt}{\includegraphics[width=8.1cm]{alex_replies.png}}\par
+      \vspace{2.5mm}
+      \support{Each request edits the plan instead of starting over.}
+    \end{column}
+  \end{columns}
+  \vspace{4mm}
+  {\large\textbf{Why AI agents here?} Each step depends on what the last one found, so the AI chooses the next search. Searches the plan cannot do without are run even if the AI skipped them.\par}
   \note{
-    \textbf{(60s, ends 2:27)} One, you ask. Two, AI agents gather. The intake agent turns your
-    sentence into a city, dates and a budget. If something is missing or in the past, it asks
-    you. That is the first human checkpoint. The research agent chooses which tools to call, and
-    a final check adds any it skipped. Three, plain code checks the money. The composer prices
-    every stop, and the critic repairs the plan one step at a time, at most five times. The AI
-    never adds up the budget. Four, you decide, the second checkpoint. You approve, or ask for a
-    change, and the feedback agent turns it into edits. Why agents? Each step depends on what
-    the last one found. With no keys at all, demo mode runs the same steps on rules and labelled
-    sample data, all but the visit guides.
+    \textbf{(44 s, ends at 1 min 53 s)} Idea one, AI agents do the legwork. First, they ask for
+    what is missing. Alex never said where from or when, so Roameo asked. It never guesses a
+    city or a date, because a guessed date gives a useless plan. Second, they choose which
+    searches the trip needs. For Alex they compared eight flights, eighteen hotels and fifty
+    nine events. Past years' weather for those dates looked cold and rainy, so Roameo also
+    looked for indoor places, holiday markets and ice skating. Third, they turn plain words into
+    changes. Make it cheaper, or slower pace, edits the plan instead of starting over.
   }
 \end{frame}
 
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 5. THE CRITIC AT WORK (41 s)
-\begin{frame}{The critic re-checks each repair, and stops after five}
-  \budget{accent}{\$1,235 to \$780}
-  \vspace{0.1cm}
-  \begin{center}
-    \includegraphics[height=6.3cm]{fig_critic.pdf}
-  \end{center}
-  \figcaption{Alex's run, read from the app's own log of what the agents did. Each point is one review by the critic, labelled with the repair just made.}
-  \vfill
-  \support{Each repair rebuilds the plan, so one step even went up. The limit is five repairs, then a human decides.}
-  \support{In our tests a \$300 budget gets the same honest answer: \$778, which is \$478 over.}
-  \vspace{0.15cm}
+% 5. IDEA 2, CODE CHECKS THE MONEY
+\begin{frame}{\textcolor{umb}{\markcode}\enspace Code adds up every price and tries five fixes, from \$1,235 to \$780}
+  \centering
+  \includegraphics[width=\textwidth, height=6.75cm]{fig_price.pdf}\par
+  \raggedright
+  \vspace{2mm}
+  \figcaption{The cost line of Alex's last plan, as the app shows it. Flight and hotel are live prices. Food and local transit are labelled estimates.}
+  \vspace{1mm}
+  \shot{0.6pt}{\includegraphics[width=16.9cm]{alex_costs.png}}\par
+  \vspace{3mm}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.49\textwidth}
+      \support{\textbf{Not every fix saves money}, so code checks the total again after each one.}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \support{\textbf{The AI never adds up the money.} Code gives the same exact sum every time, and we can test it.}
+    \end{column}
+  \end{columns}
   \note{
-    \textbf{(44s, ends 3:11)} Here is the critic in Alex's run, from the app's own log. A
-    cheaper hotel took the plan from one thousand two hundred thirty five to nine hundred eighty
-    four dollars. The cheapest flight did not help. Dropping paid events even went up a little,
-    because each repair rebuilds the plan. Keeping free sights plus two that match Alex's
-    interests reached seven hundred eighty. Moving stops indoors for the rainy day kept it
-    there. Five repairs is the limit. Our tests check the same behaviour: with a three hundred
-    dollar budget, it reports four hundred seventy eight over instead of hiding it.
+    \textbf{(47 s, ends at 2 min 40 s)} Idea two, code checks the money. Plain code adds up
+    every total. The flight and the hotel are live prices, and food and local transit are
+    labelled estimates. Alex's first plan came to one thousand two hundred thirty five dollars.
+    Then code tries one fix at a time, at most five. A cheaper hotel, the cheapest flight, no
+    paid events, free sights, indoor stops for the rain. Not every fix saves money, so it checks
+    the total after each one. Why code and not the AI? Code gives the same exact sum every time,
+    and we can test it. An AI model's answer can change from run to run.
   }
 \end{frame}
 
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 6. THE HUMAN DECISION (36 s)
-\begin{frame}{Then it stops and asks Alex, instead of quietly going over}
-  \budget{accent}{\$180 over}
-  \vspace{0.1cm}
-  \begin{columns}[T]
+% 6. THE MOMENT OF TENSION, IDEA 3, YOU MAKE THE CALL
+\begin{frame}{\textcolor{umb}{\markyou}\enspace Still \$180 over, Roameo stops and asks Alex what to do}
+  \shot[accent]{1.4pt}{\includegraphics[width=16.9cm]{alex_total.png}}\par
+  \vspace{3mm}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.48\textwidth}
+      \figcaption{The question in the chat, word for word}
+      \vspace{1mm}
+      \shot[accent]{1.4pt}{\includegraphics[width=8.0cm]{alex_question.png}}\par
+      \vspace{3.5mm}
+      \figcaption{The plan waits for Alex}
+      \vspace{1.5mm}
+      \includegraphics[height=0.85cm]{alex_approve.png}\hspace{3mm}\includegraphics[height=0.68cm]{alex_badge.png}\par
+    \end{column}
+    \begin{column}{0.50\textwidth}
+      \partlabel{a}{Alex chooses how to close the gap}
+      \vspace{2mm}
+      \choice{raise the budget}\hspace{0.8mm}\choice{2 nights}\hspace{0.8mm}\choice{drive}\par
+      \vspace{3mm}
+      \begin{tikzpicture}[x=1cm, y=1cm]
+        \node[fill=oksoft, rounded corners=3pt, inner sep=6pt, text width=8.0cm, align=left, font=\normalsize, text=ink] {%
+          \textbf{\textcolor{ok}{From our tests.}} With Alex's exact sentence, when the budget is raised, the plan is rebuilt, checked again, and fits. Alex says OK and gets a calendar file.};
+      \end{tikzpicture}\par
+      \vspace{3mm}
+      \partlabel{b}{Alex can read all 25 steps it took}
+      \vspace{2mm}
+      \partlabel{c}{Roameo never books or pays}
+      {\normalsize\hspace{5mm}Alex books on a site Alex trusts.\par}
+    \end{column}
+  \end{columns}
+  \vspace{6mm}
+  {\large\textbf{Why it never books.} Paying is a decision a person should make, on a site they trust. Saying OK only downloads a calendar file.\par}
+  \note{
+    \textbf{(43 s, ends at 3 min 23 s)} After five fixes the plan costs seven hundred eighty
+    dollars, still one hundred eighty over. This is the moment that matters. Roameo does not
+    hide the gap, and it does not decide for Alex. It stops and asks. Raise the budget, shorten
+    to two nights, or drive instead of flying? That is idea three, you make the call. Our tests
+    replay Alex's exact sentence, and when the budget is raised, the plan is rebuilt, checked
+    again, and it fits. Saying OK only downloads a calendar file. Roameo never books or pays,
+    because paying is a choice a person should make.
+  }
+\end{frame}
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% 7. EVALUATION
+\begin{frame}{All 23 tests of what Roameo should do pass, with and without the AI}
+  \begin{columns}[T, totalwidth=\textwidth]
     \begin{column}{0.60\textwidth}
-      \includegraphics[width=\linewidth]{esc_budget.png}
-      \figcaption{The plan in Alex's run: the budget bar turns red, and the plan waits for approval.}
-    \end{column}
-    \begin{column}{0.38\textwidth}
-      \includegraphics[width=\linewidth]{esc_question.png}
-      \figcaption{The question in the chat, with buttons for a change or approval.}
-    \end{column}
-  \end{columns}
-  \vspace{0.35cm}
-  {\normalsize\bfseries Alex's call\par}
-  \vspace{0.2cm}
-  \option{raise the budget}\hspace{0.5em}\option{shorten to 2 nights}\hspace{0.5em}\option{drive instead of flying}\par
-  \vfill
-  \support{Alex picks one. The plan is \textbf{rebuilt and checked again}, then waits for Alex.}
-  \vspace{0.05cm}
-  \support{{\color{ok}\faCalendarCheck\ \textbf{Approve}} only exports a calendar file. Roameo never books or pays for anything.}
-  \vspace{0.15cm}
-  \note{
-    \textbf{(36s, ends 3:47)} So Roameo stops and asks. The bar turns red: one hundred eighty
-    dollars over your six hundred dollar budget. Would you like to raise the budget, shorten to
-    two nights, or drive instead of flying? This is the moment that matters. The agents did the
-    work, but the trade-off belongs to Alex. Alex picks one, the plan is rebuilt and checked
-    again, and it waits. Nothing is final until Alex approves, and approving only exports a
-    calendar file. Roameo never books or pays.
-  }
-\end{frame}
-
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 7. ADAPTIVE AND VERSATILE (42 s)
-\begin{frame}{Plans bend to feedback, weather and the season}
-  \vspace{0.0cm}
-  {\small Say it in plain words:\quad}\option{cheaper}\hspace{0.3em}\option{different hotel}\hspace{0.3em}\option{skip a place}\hspace{0.3em}\option{more museums}\hspace{0.3em}\option{slower pace}
-  \vspace{0.35cm}
-  \begin{columns}[T]
-    \begin{column}{0.40\textwidth}
-      \includegraphics[width=\linewidth]{winter_ask.png}
-      \vspace{0.1cm}
-      \includegraphics[width=\linewidth]{winter_warn.png}
-      \figcaption{Michigan in December: it asks which city, then warns about the cold and puts indoor stops first.}
-    \end{column}
-    \begin{column}{0.58\textwidth}
-      \includegraphics[width=\linewidth]{guide_top.png}
-      \figcaption{A visit guide for one stop: what it is and what not to miss.}
-    \end{column}
-  \end{columns}
-  \vfill
-  \support{Each request is an \textbf{edit, not a restart}: the rest of the plan stays, and the reply lists what changed.}
-  \vspace{0.15cm}
-  \note{
-    \textbf{(44s, ends 4:31)} Plans also bend. Alex can say cheaper, different hotel, skip a
-    place, more museums or slower pace. Each request is an edit, not a restart, and the reply
-    lists what changed. Weather and season count too. Here someone asks for Michigan in
-    December. Michigan is a state, so it asks which city, then uses what those dates were like
-    in past years, puts indoor stops first and says pack warm layers. And with the AI on, every
-    stop gets a visit guide: what not to miss, and how to spend the time there. For museums,
-    exhibitions come only from a real web search.
-  }
-\end{frame}
-
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 8. RESULTS (56 s)
-\begin{frame}{All 23 core tests pass in both modes, and in each of three AI runs}
-  \vspace{0.0cm}
-  \begin{center}
-    \includegraphics[height=6.25cm]{fig_results.pdf}
-  \end{center}
-  \vfill
-  \support{A \textbf{test} is a scripted conversation with checks on the result, such as \emph{total within budget} or \emph{no flight search for a road trip}: 51 checks, all passed.}
-  \vspace{0.05cm}
-  \support{We wrote the tests ourselves, on sample prices. Demo mode follows fixed rules, so only the 3 AI runs speak to consistency.}
-  \vspace{0.1cm}
-  \note{
-    \textbf{(54s, ends 5:25)} Does it work? We wrote twenty five test conversations. Each is a
-    scripted chat followed by checks on the result, for example, the total is within budget, or
-    there is no flight search for a road trip. Twenty three are core tests, and two are known
-    limits that we report anyway. The core tests pass in demo mode, which follows fixed rules,
-    and in AI mode, with Claude Haiku through OpenRouter. We ran AI mode three times, and every
-    core test passed each time. Most tests are about asking you and taking feedback. But we
-    wrote the tests, the tools used sample prices, and three runs is a small sample. Demo mode
-    gives the same answer every time, so only the AI runs tell us about consistency.
-  }
-\end{frame}
-
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 9. LIMITS (27 s)
-\begin{frame}{What it cannot do yet}
-  \vfill
-  \begin{center}
-    \includegraphics[width=\textwidth]{fig_limits.pdf}
-  \end{center}
-  \vfill
-  \support{The tests do not judge how good a plan is, live prices, or the visit guides.}
-  \vspace{0.2cm}
-  \note{
-    \textbf{(31s, ends 5:56)} What it cannot do yet. Without keys it covers seven cities. Food
-    and local transit are flat daily estimates. Many events list no price, so they stay out of
-    the total. Visit tips are written by the AI and may be out of date. Trips live in memory, so
-    a restart clears them. And there was no user study. The tests do not judge how good a plan
-    is, or live prices.
-  }
-\end{frame}
-
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 10. DEPLOY AND WHO IT HELPS (38 s)
-\begin{frame}{One URL to deploy, three minutes to try without keys}
-  \vfill
-  \begin{center}
-    \includegraphics[width=\textwidth]{fig_deploy.pdf}
-  \end{center}
-  \vfill
-  \support{Built for \textbf{students and budget travellers} on short trips, and for small groups who split the cost.}
-  \vspace{0.05cm}
-  \support{The free Render plan sleeps after 15 idle minutes, so open it a minute before you need it.}
-  \vspace{0.2cm}
-  \note{
-    \textbf{(38s, ends 6:34)} It is easy to run. Without any keys, it starts on a laptop in
-    about three minutes. To share it, one Docker image and a blueprint file put it on Render as
-    one web address. An access code and sixty requests per visitor per hour protect the search
-    quota. The free plan sleeps after fifteen idle minutes, so open it a minute early. Then add
-    keys one at a time, with any OpenRouter model for the agents. It is built for students and
-    budget travellers on short trips.
-  }
-\end{frame}
-
-% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-% 11. CLOSE (13 s)
-\begin{frame}{Alex still makes the call on the \$600}
-  \budget{ink}{\$600, Alex's call}
-  \vspace{0.9cm}
-  \begin{columns}[T]
-    \begin{column}{0.60\textwidth}
-      {\Large Roameo's agents do the \textbf{research} and the \textbf{arithmetic}. When the money does not work out, they \textbf{stop and ask}, instead of quietly going over.\par}
-      \vspace{0.8cm}
-      \option{raise the budget}\hspace{0.4em}\option{shorten to 2 nights}\hspace{0.4em}\option{drive instead}\par
-      \vspace{1.0cm}
-      {\Large\bfseries Thank you\par}
-      \vspace{0.15cm}
-      {\normalsize Zhen Lu \quad Noctis Zhang\par}
+      \vspace{1mm}
+      \includegraphics[width=\linewidth]{fig_results.pdf}
     \end{column}
     \begin{column}{0.38\textwidth}
       \begin{tikzpicture}[x=1cm, y=1cm]
-        \node[anchor=north west, inner sep=0pt] at (0,0) {\qrcode[height=2.9cm]{https://roameo-l13h.onrender.com/}};
-        \node[anchor=north west, inner sep=0pt, align=left, font=\small] at (3.15,-0.1) {\textbf{Try it}\\live demo};
-        \node[anchor=north west, inner sep=0pt] at (0,-3.35) {\qrcode[height=2.9cm]{https://github.com/TinyZhen/Travel_Agent}};
-        \node[anchor=north west, inner sep=0pt, align=left, font=\small] at (3.15,-3.45) {\textbf{Code}\\GitHub};
-      \end{tikzpicture}
+        \node[fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=5.85cm, align=left, font=\small, text=ink] {%
+          {\normalsize\bfseries What a test is\par}\vspace{1mm}
+          A conversation we wrote in advance, typed into Roameo, with code that checks the answer. It \textbf{passes} when every check comes out right.\par\vspace{1.5mm}
+          {\normalsize\bfseries Two ways we ran them\par}\vspace{1mm}
+          \textbf{Demo mode}, practice runs with sample prices, so anyone can try it without sign-ups or paid accounts.\par\vspace{1mm}
+          \textbf{3 runs with the AI}, the same tests three times, because the AI can answer differently each time.};
+      \end{tikzpicture}\par
+      \vspace{2mm}
+      {\small
+      \makebox[0.6cm][l]{\textcolor{umb}{\markagents}}It asks for a missing date.\par\vspace{0.8mm}
+      \makebox[0.6cm][l]{\textcolor{umb}{\markcode}}On \$300 it reports \$478 over.\par\vspace{0.8mm}
+      \makebox[0.6cm][l]{\textcolor{umb}{\markyou}}Nothing counts as approved before OK.\par}
+    \end{column}
+  \end{columns}
+  \vspace{2.5mm}
+  \support{\textbf{Honest limits.} We wrote the tests ourselves, both modes used sample prices and weather, 3 runs is a small sample, and there was no user study. Only the AI understood ``first weekend of December''.}
+  \note{
+    \textbf{(49 s, ends at 4 min 12 s)} Does it work? A test here is a conversation we wrote in
+    advance, typed into Roameo, with code that checks the answer. For example, that it asks for
+    a missing date. A test passes when every check comes out right. We ran them in demo mode,
+    which is practice runs with sample prices, and three times with the AI, because the AI can
+    answer differently each time. All twenty three tests passed, in demo mode and in each of the
+    three runs. Only the AI understood first weekend of December. To be fair, we wrote the tests
+    ourselves, both modes used sample prices, three runs is a small sample, and there was no
+    user study.
+  }
+\end{frame}
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% 8. RESPONSIBLE USE OF AI
+\begin{frame}{Roameo never books or pays, and says what it cannot do yet}
+  \relax{\normalsize\bfseries What goes where when you use it\par}
+  \vspace{1mm}
+  \centering
+  \includegraphics[width=\textwidth, height=5.95cm, keepaspectratio]{fig_dataflow.pdf}\par
+  \raggedright
+  \vspace{2.5mm}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.44\textwidth}
+      {\normalsize\bfseries Responsible use of AI\par}
+      \vspace{1.2mm}
+      {\small
+      \makebox[0.55cm][l]{\textcolor{umb}{\markagents}}It asks before it guesses, and each AI helper has one narrow job.\par\vspace{1mm}
+      \makebox[0.55cm][l]{\textcolor{umb}{\markcode}}Code shows its math and labels sample prices and estimates.\par\vspace{1mm}
+      \makebox[0.55cm][l]{\textcolor{umb}{\markyou}}You decide, you see every step, and you book it yourself.\par}
+    \end{column}
+    \begin{column}{0.54\textwidth}
+      {\normalsize\bfseries What it cannot do yet\par}
+      \vspace{1.2mm}
+      \begin{tikzpicture}[x=1cm, y=1cm, nb/.style={fill=faint, rounded corners=3pt, inner sep=4pt, text width=4.1cm, minimum height=1.05cm, align=left, font=\small, text=ink, anchor=north west}]
+        \node[nb] at (0,0) {Demo mode covers 8 cities.};
+        \node[nb] at (4.62,0) {Food and local transit are estimates.};
+        \node[nb] at (0,-1.2) {AI-written summaries and tips can be wrong or out of date.};
+        \node[nb] at (4.62,-1.2) {No user study yet.};
+      \end{tikzpicture}\par
     \end{column}
   \end{columns}
   \note{
-    \textbf{(13s, ends 6:47)} Back to Alex. Roameo did the research and the math, and showed the
-    gap honestly. The six hundred dollars stays Alex's call. Scan the code to try it. Thank you.
+    \textbf{(40 s, ends at 4 min 52 s)} Responsible use of AI follows the same three ideas. The
+    AI asks before it guesses, and each helper has one narrow job. Code shows its math and
+    labels estimates. And you decide, and book it yourself. What goes where? In AI mode, what
+    you type goes to the AI model. The searches get the city, the dates and airport codes, not
+    your sentence or your budget. There are no accounts. What can be wrong? The summary and the
+    visit tips are written by the AI, and they can be wrong or out of date.
+  }
+\end{frame}
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% 9. COMPETITORS AND TARGET MARKET
+\begin{frame}{Other apps plan or sell trips, Roameo treats your budget as a limit}
+  \begin{tikzpicture}[x=1cm, y=1cm, grp/.style={fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=5.0cm, minimum height=4.1cm, align=left, font=\normalsize, text=ink, anchor=north west}]
+    \node[grp] at (0,0) {{\large\bfseries Chat assistants\par}\vspace{0.5mm}{\small\color{muted}such as ChatGPT and Gemini\par}\vspace{1.5mm}
+      Answer questions on any topic, and can write a trip plan in a chat window.};
+    \node[grp] at (5.75,0) {{\large\bfseries Booking site assistants\par}\vspace{0.5mm}{\small\color{muted}such as Expedia's Romie\par}\vspace{1.5mm}
+      Helps you plan, shop and book inside Expedia [3].};
+    \node[grp] at (11.5,0) {{\large\bfseries AI trip planner apps\par}\vspace{0.5mm}{\small\color{muted}such as Mindtrip, Layla, Wonderplan\par}\vspace{1.5mm}
+      Focus on ideas and day plans, and some add booking, says a review [4].};
+  \end{tikzpicture}\par
+  \vspace{4.5mm}
+  \support{\textbf{Also used instead}\enspace spreadsheets and group chats, a travel agency, and trip organizers such as TripIt that keep bookings you already made.}
+  \vspace{4.5mm}
+  \support{\textbf{Where Roameo differs}\enspace It is not a booking site and not a chat window. It is the planning step in between, where code adds up every price and you decide on the money.}
+  \vspace{3mm}
+  \begin{tikzpicture}[x=1cm, y=1cm, who/.style={fill=faint, rounded corners=3pt, inner sep=6pt, text width=3.6cm, minimum height=1.5cm, align=left, font=\normalsize, text=ink, anchor=north west}]
+    \node[anchor=north west, inner sep=0pt, font=\normalsize\bfseries, text width=1.7cm] at (0,-0.4) {Built for};
+    \node[who] at (1.75,0) {students on short trips};
+    \node[who] at (6.0,0) {budget travelers};
+    \node[who] at (10.25,0) {small groups who split the cost};
+  \end{tikzpicture}\par
+  \vspace{2mm}
+  \figcaption{First group to reach, student clubs. We have not tested the others. This is what each says it is for. [3] Expedia Group, Spring 2024 product release. [4] Fast.io, a review of AI trip planners, 2026.}
+  \note{
+    \textbf{(38 s, ends at 5 min 30 s)} Who else helps plan trips? Chat assistants can plan a
+    trip in a chat window. Expedia's assistant, Romie, helps you plan, shop and book inside
+    Expedia. Planner apps like Mindtrip, Layla and Wonderplan focus on ideas and day plans.
+    People also use spreadsheets, group chats or a travel agency. We have not tested the others.
+    Roameo is the planning step in between, and it treats your budget as a limit, not a wish. It
+    is built for students on short trips, budget travelers and small groups. First, student
+    clubs.
+  }
+\end{frame}
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% 10. TRY IT, SHARE IT, WHAT COMES NEXT
+\begin{frame}{Anyone can try Roameo free, and a club can share one link}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.65\textwidth}
+      \begin{tikzpicture}[x=1cm, y=1cm, st/.style={fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=10.0cm, minimum height=2.6cm, align=left, font=\normalsize, text=ink, anchor=north west}, ic/.style={font=\LARGE, text=umb, anchor=north west, inner sep=0pt}]
+        \node[st] at (0,0) {\hspace{1.3cm}\parbox[t]{8.6cm}{{\large\bfseries Try it on a laptop\par}\vspace{0.8mm}Demo mode starts in about three minutes, with sample prices for 8 cities and no sign-ups or paid accounts.}};
+        \node[ic] at (0.3,-0.4) {\faLaptop};
+        \node[st] at (0,-2.85) {\hspace{1.3cm}\parbox[t]{8.6cm}{{\large\bfseries Share one link with a club\par}\vspace{0.8mm}A group of four sees 2 rooms and the cost per person before anyone pays. An optional access code keeps the free searches for the club.}};
+        \node[ic] at (0.3,-3.25) {\faUsers};
+        \node[st] at (0,-5.7) {\hspace{1.3cm}\parbox[t]{8.6cm}{{\large\bfseries Add live prices one service at a time\par}\vspace{0.8mm}About 80 plans a month fit in the free search plan. A class can read the code to see an AI that asks before it spends.}};
+        \node[ic] at (0.3,-6.1) {\faKey};
+      \end{tikzpicture}\par
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \centering
+      \qrcode[height=3.3cm]{https://roameo-l13h.onrender.com/}\par
+      \vspace{1mm}
+      {\small\textbf{Try it}\\roameo-l13h.onrender.com\par}
+      \vspace{4mm}
+      \qrcode[height=3.3cm]{https://github.com/TinyZhen/Travel_Agent}\par
+      \vspace{1mm}
+      {\small\textbf{The code is public}\\github.com/TinyZhen/Travel\_Agent\par}
+    \end{column}
+  \end{columns}
+  \vspace{3mm}
+  \support{\textbf{Next}, a pilot with 5 to 10 students, to measure overspending and the time to a plan. \textbf{Our ask}, try it and tell us where it goes wrong.}
+  \note{
+    \textbf{(33 s, ends at 6 min 03 s)} Anyone can try it free. Demo mode starts on a laptop in
+    about three minutes, with sample prices for eight cities and no sign-ups. A club can share
+    one link, and a group of four sees two rooms and the cost per person before anyone pays. A
+    class can read the code to see an AI that asks before it spends. Next, a pilot with five to
+    ten students. Please try it, and tell us where it goes wrong.
+  }
+\end{frame}
+
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% 11. CLOSE, THE THREE IDEAS AGAIN
+\begin{frame}{AI did the legwork, code checked the money, and Alex made the call}
+  \centering
+  \includegraphics[width=\textwidth]{fig_ideas_close.pdf}\par
+  \raggedright
+  \vspace{5.5mm}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.78\textwidth}
+      {\Large\bfseries\color{primary}Roameo treats your budget as a limit, not a wish.\par}
+      \vspace{2.5mm}
+      {\small A chat reply can tell you a plan fits with nobody checking the sum. In Roameo, AI agents do the searching, plain code adds up every total, and when the money does not work it stops and asks you.\par}
+      \vspace{2.5mm}
+      {\footnotesize\color{muted}\textbf{Thank you} to the PEAAII AI Applications Hackathon 2026 organizers. Data from Google Flights, Hotels, Events and Maps through SerpApi, Ticketmaster, Open-Meteo and OpenStreetMap. AI model Claude Haiku 5.5 through OpenRouter. Slide template Elegant by Lars Spreng. Logos of the University of Massachusetts Boston, for the authors' affiliation only.\par}
+    \end{column}
+    \begin{column}{0.20\textwidth}
+      \centering
+      \qrcode[height=2.75cm]{https://roameo-l13h.onrender.com/}\par
+      \vspace{1mm}
+      {\small\bfseries Scan to try it\par}
+    \end{column}
+  \end{columns}
+  \note{
+    \textbf{(21 s, ends at 6 min 24 s)} So, three ideas. AI agents did the legwork for Alex.
+    Code checked the money and found the one hundred eighty dollar gap. And Alex made the call.
+    Roameo treats your budget as a limit, not a wish. Thank you to the PEAAII organizers. Scan
+    the code to try it.
   }
 \end{frame}
 
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 % BACKUP SLIDES (not timed)
 \appendix
-\begin{frame}{Backup: the critic's repairs, in a fixed order}
-  \vspace{0.3cm}
-  \begin{center}
-    \begin{tikzpicture}[x=1cm, y=1cm, font=\small,
-      st/.style={anchor=north west, text width=2.45cm, align=left, inner sep=0pt, text=ink},
-      no/.style={circle, fill=primary, text=white, font=\small\bfseries, inner sep=1.6pt, minimum size=5mm}]
-      \foreach \i/\x/\t in {1/0/{Swap outdoor stops for indoor ones on bad-weather days}, 2/2.85/{Cheaper hotel, one tier at a time}, 3/5.7/{Cheapest flight}, 4/8.55/{Drop paid events}, 5/11.4/{Free sights plus the 2 that best match your interests}, 6/14.25/{Free sights only}} {
-        \node[no] at (\x+0.25,0.3) {\i};
-        \node[st] at (\x,-0.2) {\t};
-      }
-    \end{tikzpicture}
-  \end{center}
-  \vspace{0.6cm}
-  \support{The critic applies one repair, the composer rebuilds and prices the plan, and the critic checks again, at most five times. If the plan is still over budget, the person decides, so the last repair may never run. The weather swap runs first whenever a rainy day has outdoor stops. In Alex's run that happened only after the sights changed, so it came last. Budget repairs run only while the plan is over budget.}
-  \vspace{0.3cm}
-  \support{Escalation also covers no flight, no hotel, light days and cold weather. In the AI mode, a failed model call falls back to the rule path, so some AI-mode passes may use rules.}
-  \note{Backup only. Source: the critic agent's repair order and the coordinator's limit of five repairs.}
+
+\begin{frame}{Backup, how it works inside}
+  \centering
+  \includegraphics[width=\textwidth]{fig_workflow.pdf}\par
+  \raggedright
+  \vspace{2.5mm}
+  \vspace{1mm}
+  {\large\textbf{Why six helpers and not one big prompt?} Each AI step has a narrow job, and code checks what it returns. Activities come from an allowed list. A trip fact changes only if your own words say so. Searches the plan needs are run even if the AI skipped them, and the researcher stops after 8 steps.\par}
+  \vspace{2.5mm}
+  {\large\textbf{Why not more?} A separate helper for every search would add hand-offs without adding decisions.\par}
+  \note{Backup only. Sources are the six helper files and the coordinator file in backend/agents.}
 \end{frame}
 
-\begin{frame}{Backup: what the 25 test conversations check}
-  \vspace{0.1cm}
-  {\footnotesize\renewcommand{\arraystretch}{1.35}
-  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.7cm}>{\raggedright\arraybackslash}X@{}}
-    \textbf{Asking you and feedback (10)} & Missing date, missing destination and missing origin are asked, never assumed. An impossible budget is escalated. Raising the budget makes the plan fit. ``Cheaper'' really lowers the price, ``different hotel'' changes it, a named place is skipped. ``More museums'' revises, ``slower pace'' lightens the days. \\
-    \textbf{Bad input, no guessing (4)} & Unknown city, a past date, vague feedback, a state instead of a city. \\
-    \textbf{Weather, season, interests (4)} & Rainy days start indoors, winter days keep outdoor time short, a river cruise is not scheduled out of season, cutting cost keeps a museum for a museum lover. \\
-    \textbf{Core planning (4)} & A complete request gives a priced plan within budget, driving skips flights and adds gas and parking, a local day trip has no flight or hotel, a family of four gets two rooms. \\
-    \textbf{Safety (1)} & Nothing is approved without an explicit approval. \\
-    \textbf{Known limits (2)} & A city outside the demo data is asked about. A complex date phrase: demo mode asks for a date instead, AI mode resolves it. \\
-  \end{tabularx}}
-  \vspace{0.2cm}
-  \figcaption{From the results files in the repository: demo mode with 1 run, AI mode with 3 runs per test.}
+\begin{frame}{Backup, the checker's fixes come in a fixed order}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.49\textwidth}
+      {\normalsize\bfseries The fixed order\par}
+      \vspace{2mm}
+      \begin{tikzpicture}[x=1cm, y=1cm, st/.style={fill=umbsoft, rounded corners=3pt, inner sep=5pt, text width=7.2cm, align=left, font=\normalsize, text=ink, anchor=north west}]
+        \node[st] at (0,0)     {\textbf{1}\enspace Indoor stops on a bad weather day, first when one is found};
+        \node[st] at (0,-1.4)  {\textbf{2}\enspace A cheaper hotel, one level at a time, which can use two fixes};
+        \node[st] at (0,-2.8)  {\textbf{3}\enspace The cheapest flight};
+        \node[st] at (0,-3.95)  {\textbf{4}\enspace No paid events};
+        \node[st] at (0,-5.1)  {\textbf{5}\enspace Free sights plus the 2 that best match your interests};
+        \node[st] at (0,-6.5)  {\textbf{6}\enspace Free sights only};
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      {\normalsize\bfseries What happened in Alex's run\par}
+      \vspace{2mm}
+      \begin{tikzpicture}[x=1cm, y=1cm, st/.style={fill=faint, rounded corners=3pt, inner sep=5pt, text width=7.2cm, align=left, font=\normalsize, text=ink, anchor=north west}]
+        \node[st] at (0,0)     {First plan \hfill \$1,235};
+        \node[st] at (0,-1.15)  {A cheaper hotel \hfill \$984};
+        \node[st] at (0,-2.3)  {The cheapest flight \hfill \$984};
+        \node[st] at (0,-3.45)  {No paid events \hfill \$1,014};
+        \node[st] at (0,-4.6)  {Free sights plus 2 that match \hfill \$780};
+        \node[st] at (0,-5.75)  {Indoor stops on the rainy day \hfill \$780};
+      \end{tikzpicture}\par
+      \vspace{2mm}
+      \support{The rainy day showed up only after the sights changed, so its fix came last. With five fixes used, Roameo asked Alex.}
+    \end{column}
+  \end{columns}
+  \vspace{4mm}
+  {\large Budget fixes run only while the plan is over budget. Under the cap of five, the last fix may never run.\par}
+  \note{Backup only. Sources are the checker's list of fixes and the coordinator's limit of five fixes, in backend/agents.}
+\end{frame}
+
+\begin{frame}{Backup, who else helps plan trips, with sources}
+  \relax{\normalsize\renewcommand{\arraystretch}{1.75}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.6cm}@{}}
+    \textbf{Who} & \textbf{What it says it is for} & \textbf{How Roameo differs} \\
+    \rowcolor{umbsoft} Chat assistants such as ChatGPT and Gemini & General assistants that answer questions on any topic, travel included. & Code adds up the money, and it asks before it goes over. \\
+    Expedia's Romie [3] & An assistant inside Expedia, launched in May 2024 as an early test, for planning, shopping and booking. & Not tied to one booking site, and you choose the trade-offs. \\
+    \rowcolor{umbsoft} Mindtrip, Layla, Wonderplan [4] & AI trip planners focused on ideas and day plans, some adding booking, says a review. & Built for short trips on a tight budget, with every step shown. \\
+    Spreadsheets, group chats, a travel agency, TripIt & Indirect, ways people plan or keep bookings today. & One sentence instead of many tabs, and the total is added by code. \\
+  \end{tabularx}\par}
+  \vspace{4mm}
+  \support{We have not tested the others. This table says what each says it is for, from its own announcement or from a review.}
+  \vspace{3mm}
+  \figcaption{[3] Expedia Group, Spring 2024 product release, expedia.com/newsroom/spring-product-release-2024. [4] Fast.io, Best AI for travel planning 2026, a vendor review and an opinion, fast.io/resources/best-ai-for-travel-planning-2026.}
+  \note{Backup only. Sources are the report's references 3 and 4.}
+\end{frame}
+
+\begin{frame}{Backup, what the 25 tests check, in plain words}
+  \relax{\small\renewcommand{\arraystretch}{2.05}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{4.3cm}>{\raggedright\arraybackslash}X@{}}
+    \rowcolor{umbsoft} \textbf{Asking you and following your changes, 10} & It asks for a missing date, destination or starting city, and never assumes them. An impossible budget is put to you, and raising it makes the plan fit. ``Cheaper'' really lowers the price, ``different hotel'' changes it, a named place is skipped, ``more museums'' edits the plan and ``slower pace'' lightens the days. \\
+    \textbf{Unclear or bad input, 4} & An unknown city, a past date, vague feedback, and a state instead of a city are all asked about. \\
+    \rowcolor{umbsoft} \textbf{Adapting to weather, season and what you love, 4} & Rainy days start indoors, winter days keep outdoor time short, a river cruise is not booked out of season, and cutting cost keeps a museum for a museum lover. \\
+    \textbf{Planning basics, 4} & A full request gives a priced plan within budget. Driving skips flights and adds gas and parking. A local day trip has no flight or hotel. A group of four gets 2 rooms. \\
+    \rowcolor{umbsoft} \textbf{Nothing final without your OK, 1} & The plan counts as approved only after you say OK. \\
+    \textbf{Known limits, 2, not in the 23} & A city outside the sample data is asked about. A tricky date phrase, where demo mode asks for a date and the AI understands it. \\
+  \end{tabularx}\par}
+  \vspace{3mm}
+  \figcaption{From the results files in the repository, demo mode with 1 run and the AI with 3 runs. The rainy day test passes on sample weather without its rule firing, because sample rain stays at or under 50 percent. The rule did fire in Alex's live run.}
+  \note{Backup only. Sources are the two evaluation results files in docs, demo mode and AI mode.}
+\end{frame}
+
+\begin{frame}{Backup, weather and season change the plan}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.49\textwidth}
+      \figcaption{Michigan in December. A state is not a city, so it asks.}
+      \vspace{1mm}
+      \shot{0.6pt}{\includegraphics[width=8.2cm]{winter_ask.png}}\par
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \figcaption{Then it warns about the cold and puts indoor stops first.}
+      \vspace{1mm}
+      \shot{0.6pt}{\includegraphics[width=8.2cm]{winter_warn.png}}\par
+    \end{column}
+  \end{columns}
+  \vspace{3mm}
+  \figcaption{In Alex's live run, past years' weather for those dates said cold, so the researcher also looked for indoor places, holiday markets and ice skating.}
+  \vspace{1mm}
+  \shot{0.6pt}{\includegraphics[width=16.9cm]{alex_season.png}}\par
+  \vspace{3mm}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.49\textwidth}
+      \support{\textbf{Past years' weather} is used when the forecast does not reach that far, and the plan says so.}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      \support{\textbf{Visit guides}, with the AI on, are written by the AI and labelled so.}
+    \end{column}
+  \end{columns}
+  \note{Backup only. Sources are docs/screenshots/08_winter_detroit.png, 07_visit_guide.png and 03_over_budget_escalation.png.}
+\end{frame}
+
+\begin{frame}{Backup, sources and thanks}
+  \begin{columns}[T, totalwidth=\textwidth]
+    \begin{column}{0.49\textwidth}
+      {\normalsize\bfseries Sources\par}
+      \vspace{1.5mm}
+      {\normalsize
+      [1] Expedia Group Media Solutions, Path to Purchase research, 2023.\\ {\small\color{muted}expedia.com/newsroom/eg-path-to-purchase-research}\par\vspace{3.6mm}
+      [2] Booking.com, Global AI Sentiment Report, July 2025, through Hospitality Net.\\ {\small\color{muted}hospitalitynet.org/news/4128268.html}\par\vspace{3.6mm}
+      [3] Expedia Group, Spring 2024 product release, which introduced Romie.\\ {\small\color{muted}expedia.com/newsroom/spring-product-release-2024}\par\vspace{3.6mm}
+      [4] Fast.io, Best AI for travel planning 2026, a vendor review and an opinion.\\ {\small\color{muted}fast.io/resources/best-ai-for-travel-planning-2026}\par\vspace{3.6mm}
+      \textbf{Numbers} come from the repository, the evaluation results files, README.md, the code under backend/ and docs/screenshots, or from the sources above.\par}
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      {\normalsize\bfseries Thanks\par}
+      \vspace{1.5mm}
+      {\normalsize
+      To the organizers of the PEAAII AI Applications Hackathon 2026.\par\vspace{3.6mm}
+      \textbf{Data and services}\enspace Google Flights, Google Hotels, Google Events and Google Maps through SerpApi, Ticketmaster Discovery, Open-Meteo, OpenStreetMap and Leaflet.\par\vspace{3.6mm}
+      \textbf{AI model}\enspace Claude Haiku 5.5 by Anthropic, through OpenRouter, in AI mode only.\par\vspace{3.6mm}
+      \textbf{Built with}\enspace FastAPI, React, Vite and Tailwind CSS. Slides on the Elegant template by Lars Spreng (CC BY 4.0). Poster on the Gemini theme by Anish Athalye (MIT License).\par\vspace{3.6mm}
+      \textbf{Identity}\enspace The UMass Boston logos and colours show the authors' affiliation. They do not mean the university endorses Roameo.\par}
+    \end{column}
+  \end{columns}
   \note{Backup only.}
 \end{frame}
 

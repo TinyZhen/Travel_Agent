@@ -1,107 +1,64 @@
-# Roameo: seven-minute presentation script
+# Roameo, the seven minute presentation script
 
-Speakers: Zhen Lu and Noctis Zhang. Pace: about 140 spoken words per minute. Budget: 420 seconds
-at most, planned 407. Numbers are written as they are spoken. Every number comes from the
-repository (see ../STORY_PLAN.md, section 7). Alex is an illustration: say so on slide 2.
+Speakers are Zhen Lu (slides 1 to 5) and Noctis Zhang (slides 6 to 11). The team can change this split. The pace is about 140 spoken words a minute, and the budget is 420 seconds at most. Numbers are written as they are spoken. Every number comes from the repository or from the report's cited sources (see section 9 of the revision plan in this folder). Alex is a student we made up, so say so on slide 2. The run on slides 4 to 6 is real, and the ending on slide 6 comes from our tests.
 
-## Slide 1. Roameo: agents plan the trip, you make the call
-_about 13 seconds_
+> Lines that start with this sign are cues for the speaker and are not spoken. The notes tool in the tools folder copies the spoken text into the slide notes.
 
-Hi, we are Zhen Lu and Noctis Zhang. This is Roameo, an AI trip planner for students and budget
-travellers. Its agents plan the trip, and you make the call.
+## Slide 1. Roameo plans your trip and lets you decide on the money
+_about 15 seconds_
 
-## Slide 2. Alex has $600 and one sentence
-_about 31 seconds_
+> Zhen Lu speaks.
 
-Meet Alex, a student we made up for this talk. Alex has six hundred dollars for a long weekend
-and types one sentence: Chicago for four days, budget six hundred dollars. Simple to say. But
-flights, a hotel, sights, food and transit all have to add up, around the weather and the dates,
-and again after every change. A chat reply can do that sum itself and say it fits, with nobody
-checking.
+Hi, we are Zhen Lu and Noctis Zhang, from computer science at UMass Boston. This is Roameo, a trip planner. AI agents do the legwork, code checks the money, and you make the call.
 
-## Slide 3. One sentence becomes a checked plan, and Alex keeps the final say
+## Slide 2. Alex has $600 for four days in Chicago and types one sentence
+_about 35 seconds_
+
+Meet Alex, a student we made up for this talk. Alex has six hundred dollars for four days in Chicago, and types one sentence. But flights, a hotel, sights, food and transit all have to add up, again after every change. A chat reply can do that sum itself and say it fits, with nobody checking. And in one survey, eighty nine percent wanted AI help to plan, but only twelve percent were happy to let it decide alone.
+
+## Slide 3. Roameo rests on three simple ideas
+_about 19 seconds_
+
+Roameo rests on three simple ideas. AI agents do the legwork. Code checks the money. You make the call. An agent here is an AI helper with one job. Each idea has three parts, and we will follow Alex through all of them.
+
+## Slide 4. AI agents ask first, then choose what to search
+_about 44 seconds_
+
+Idea one, AI agents do the legwork. First, they ask for what is missing. Alex never said where from or when, so Roameo asked. It never guesses a city or a date, because a guessed date gives a useless plan. Second, they choose which searches the trip needs. For Alex they compared eight flights, eighteen hotels and fifty nine events. Past years' weather for those dates looked cold and rainy, so Roameo also looked for indoor places, holiday markets and ice skating. Third, they turn plain words into changes. Make it cheaper, or slower pace, edits the plan instead of starting over.
+
+## Slide 5. Code adds up every price and tries five fixes, from $1,235 to $780
+_about 47 seconds_
+
+Idea two, code checks the money. Plain code adds up every total. The flight and the hotel are live prices, and food and local transit are labelled estimates. Alex's first plan came to one thousand two hundred thirty five dollars. Then code tries one fix at a time, at most five. A cheaper hotel, the cheapest flight, no paid events, free sights, indoor stops for the rain. Not every fix saves money, so it checks the total after each one. Why code and not the AI? Code gives the same exact sum every time, and we can test it. An AI model's answer can change from run to run.
+
+## Slide 6. Still $180 over, Roameo stops and asks Alex what to do
 _about 43 seconds_
 
-Here is one real run of the app. First, Roameo asked back: where are you leaving from, and what
-date? It never guesses a city or a date. Alex answered: from Boston, leaving November twentieth.
-Then the agents went to work. An agent is an AI helper with one job. They found eight flights,
-eighteen hotels and fifty nine events, and saw rain and cold typical for those dates. The first
-plan cost one thousand two hundred thirty five dollars. The critic cut it to seven hundred
-eighty. Still one hundred eighty over. So Roameo did not decide. It asked Alex.
+> Hand over to Noctis Zhang.
 
-## Slide 4. AI agents gather, plain code checks the money, you decide twice
-_about 60 seconds_
+After five fixes the plan costs seven hundred eighty dollars, still one hundred eighty over. This is the moment that matters. Roameo does not hide the gap, and it does not decide for Alex. It stops and asks. Raise the budget, shorten to two nights, or drive instead of flying? That is idea three, you make the call. Our tests replay Alex's exact sentence, and when the budget is raised, the plan is rebuilt, checked again, and it fits. Saying OK only downloads a calendar file. Roameo never books or pays, because paying is a choice a person should make.
 
-One, you ask. Two, AI agents gather. The intake agent turns your sentence into a city, dates and
-a budget. If something is missing or in the past, it asks you. That is the first human
-checkpoint. The research agent chooses which tools to call, and a final check adds any it
-skipped. Three, plain code checks the money. The composer prices every stop, and the critic
-repairs the plan one step at a time, at most five times. The AI never adds up the budget. Four,
-you decide, the second checkpoint. You approve, or ask for a change, and the feedback agent
-turns it into edits. Why agents? Each step depends on what the last one found. With no keys at
-all, demo mode runs the same steps on rules and labelled sample data, all but the visit guides.
+## Slide 7. All 23 tests of what Roameo should do pass, with and without the AI
+_about 49 seconds_
 
-## Slide 5. The critic re-checks each repair, and stops after five
-_about 44 seconds_
+Does it work? A test here is a conversation we wrote in advance, typed into Roameo, with code that checks the answer. For example, that it asks for a missing date. A test passes when every check comes out right. We ran them in demo mode, which is practice runs with sample prices, and three times with the AI, because the AI can answer differently each time. All twenty three tests passed, in demo mode and in each of the three runs. Only the AI understood first weekend of December. To be fair, we wrote the tests ourselves, both modes used sample prices, three runs is a small sample, and there was no user study.
 
-Here is the critic in Alex's run, from the app's own log. A cheaper hotel took the plan from one
-thousand two hundred thirty five to nine hundred eighty four dollars. The cheapest flight did
-not help. Dropping paid events even went up a little, because each repair rebuilds the plan.
-Keeping free sights plus two that match Alex's interests reached seven hundred eighty. Moving
-stops indoors for the rainy day kept it there. Five repairs is the limit. Our tests check the
-same behaviour: with a three hundred dollar budget, it reports four hundred seventy eight over
-instead of hiding it.
+## Slide 8. Roameo never books or pays, and says what it cannot do yet
+_about 40 seconds_
 
-## Slide 6. Then it stops and asks Alex, instead of quietly going over
-_about 36 seconds_
+Responsible use of AI follows the same three ideas. The AI asks before it guesses, and each helper has one narrow job. Code shows its math and labels estimates. And you decide, and book it yourself. What goes where? In AI mode, what you type goes to the AI model. The searches get the city, the dates and airport codes, not your sentence or your budget. There are no accounts. What can be wrong? The summary and the visit tips are written by the AI, and they can be wrong or out of date.
 
-So Roameo stops and asks. The bar turns red: one hundred eighty dollars over your six hundred
-dollar budget. Would you like to raise the budget, shorten to two nights, or drive instead of
-flying? This is the moment that matters. The agents did the work, but the trade-off belongs to
-Alex. Alex picks one, the plan is rebuilt and checked again, and it waits. Nothing is final
-until Alex approves, and approving only exports a calendar file. Roameo never books or pays.
-
-## Slide 7. Plans bend to feedback, weather and the season
-_about 44 seconds_
-
-Plans also bend. Alex can say cheaper, different hotel, skip a place, more museums or slower
-pace. Each request is an edit, not a restart, and the reply lists what changed. Weather and
-season count too. Here someone asks for Michigan in December. Michigan is a state, so it asks
-which city, then uses what those dates were like in past years, puts indoor stops first and says
-pack warm layers. And with the AI on, every stop gets a visit guide: what not to miss, and how
-to spend the time there. For museums, exhibitions come only from a real web search.
-
-## Slide 8. All 23 core tests pass in both modes, and in each of three AI runs
-_about 54 seconds_
-
-Does it work? We wrote twenty five test conversations. Each is a scripted chat followed by
-checks on the result, for example, the total is within budget, or there is no flight search for
-a road trip. Twenty three are core tests, and two are known limits that we report anyway. The
-core tests pass in demo mode, which follows fixed rules, and in AI mode, with Claude Haiku
-through OpenRouter. We ran AI mode three times, and every core test passed each time. Most tests
-are about asking you and taking feedback. But we wrote the tests, the tools used sample prices,
-and three runs is a small sample. Demo mode gives the same answer every time, so only the AI
-runs tell us about consistency.
-
-## Slide 9. What it cannot do yet
-_about 31 seconds_
-
-What it cannot do yet. Without keys it covers seven cities. Food and local transit are flat
-daily estimates. Many events list no price, so they stay out of the total. Visit tips are
-written by the AI and may be out of date. Trips live in memory, so a restart clears them. And
-there was no user study. The tests do not judge how good a plan is, or live prices.
-
-## Slide 10. One URL to deploy, three minutes to try without keys
+## Slide 9. Other apps plan or sell trips, Roameo treats your budget as a limit
 _about 38 seconds_
 
-It is easy to run. Without any keys, it starts on a laptop in about three minutes. To share it,
-one Docker image and a blueprint file put it on Render as one web address. An access code and
-sixty requests per visitor per hour protect the search quota. The free plan sleeps after fifteen
-idle minutes, so open it a minute early. Then add keys one at a time, with any OpenRouter model
-for the agents. It is built for students and budget travellers on short trips.
+Who else helps plan trips? Chat assistants can plan a trip in a chat window. Expedia's assistant, Romie, helps you plan, shop and book inside Expedia. Planner apps like Mindtrip, Layla and Wonderplan focus on ideas and day plans. People also use spreadsheets, group chats or a travel agency. We have not tested the others. Roameo is the planning step in between, and it treats your budget as a limit, not a wish. It is built for students on short trips, budget travelers and small groups. First, student clubs.
 
-## Slide 11. Alex still makes the call on the $600
-_about 13 seconds_
+## Slide 10. Anyone can try Roameo free, and a club can share one link
+_about 33 seconds_
 
-Back to Alex. Roameo did the research and the math, and showed the gap honestly. The six hundred
-dollars stays Alex's call. Scan the code to try it. Thank you.
+Anyone can try it free. Demo mode starts on a laptop in about three minutes, with sample prices for eight cities and no sign-ups. A club can share one link, and a group of four sees two rooms and the cost per person before anyone pays. A class can read the code to see an AI that asks before it spends. Next, a pilot with five to ten students. Please try it, and tell us where it goes wrong.
+
+## Slide 11. AI did the legwork, code checked the money, and Alex made the call
+_about 21 seconds_
+
+So, three ideas. AI agents did the legwork for Alex. Code checked the money and found the one hundred eighty dollar gap. And Alex made the call. Roameo treats your budget as a limit, not a wish. Thank you to the PEAAII organizers. Scan the code to try it.

@@ -1,4 +1,4 @@
-% Alex's trip in eight steps, left to right, for the poster's use case strip (46.6 by 3.0 in).
+% Alex's trip in eight steps, left to right, for the poster's use case strip (46.6 by 2.45 in).
 % Steps 1 to 7 are one live run of the app (docs/screenshots/03_over_budget_escalation.png).
 % Step 8 comes from our tests with sample prices (the raise-the-budget test in backend/eval/run_eval.py).
 \RequirePackage{fix-cm}
@@ -6,35 +6,35 @@
 \input{../../slides/figures/figstyle}
 \begin{document}
 \begin{tikzpicture}[x=1in, y=1in,
-  stp/.style={card, minimum width=4.62in, minimum height=3.0in, text width=4.30in, anchor=north west, inner sep=0.16in},
+  stp/.style={card, minimum width=4.62in, minimum height=2.45in, text width=4.30in, anchor=north west, inner sep=0.16in},
   hot/.style={stp, fill=accentsoft, draw=accent, line width=2.5pt},
   done/.style={stp, fill=oksoft, draw=ok, line width=2.5pt},
   ico/.style={font=\fontsize{40}{40}\selectfont, text=umb},
   head/.style={font=\fontsize{33}{38}\selectfont\bfseries, text=ink},
   body/.style={font=\fontsize{28}{33}\selectfont, text=ink},
 ]
-  \useasboundingbox (0,0) rectangle (46.6,-3.0);
+  \useasboundingbox (0,0) rectangle (46.6,-2.45);
   \def\w{4.62}\def\g{0.235}
   % #1 x index, #2 style, #3 icon, #4 icon colour, #5 head, #6 body
   \newcommand{\stepbox}[6]{%
-    \node[#2] at ({#1*(\w+\g)},0) {\parbox[t][2.66in][t]{4.30in}{%
-      {\fontsize{44}{48}\selectfont\color{#4}\rule{0pt}{0.62in}#3}\par\vspace{0.10in}%
+    \node[#2] at ({#1*(\w+\g)},0) {\parbox[t][2.13in][t]{4.30in}{\spaceskip=0pt\xspaceskip=0pt\raggedright
+      {\fontsize{40}{44}\selectfont\color{#4}\rule{0pt}{0.5in}#3}\par\vspace{0.08in}%
       {\fontsize{33}{38}\selectfont\bfseries #5\par}\vspace{0.06in}%
       {\fontsize{28}{33}\selectfont #6\par}}};}
-  \stepbox{0}{stp}{\faUser}{umb}{Alex has \$600}{4 days in Chicago, one sentence. A student we made up.}
+  \stepbox{0}{stp}{\faUser}{umb}{Alex has \$600}{Chicago, 4 days. A student we made up.}
   \stepbox{1}{stp}{\faComments}{umb}{Roameo asks first}{Where from, and when? From Boston, Nov 20.}
   \stepbox{2}{stp}{\markagents}{umb}{AI agents search}{8 flights, 18 hotels, 59 events. Cold, rain likely.}
-  \stepbox{3}{stp}{\scalebox{1.45}{\markcode}}{umb}{Code adds it up}{The first plan costs \$1,235.}
-  \stepbox{4}{stp}{\faRedo}{umb}{Five fixes}{One at a time, the total drops to \$780.}
+  \stepbox{3}{stp}{\scalebox{1.3}{\markcode}}{umb}{Code adds it up}{The first plan costs \$1,235.}
+  \stepbox{4}{stp}{\faRedo}{umb}{Five fixes}{One at a time, ending at \$780.}
   \stepbox{5}{hot}{\faExclamationTriangle}{accent}{\color{accentink}\$180 over}{Still over Alex's \$600 budget.}
   \stepbox{6}{stp}{\faQuestionCircle}{umb}{It stops and asks}{Raise the budget, 2 nights, or drive?}
-  \stepbox{7}{done}{\faCalendarCheck}{ok}{Alex says OK}{Budget raised, plan checked, it fits. From our tests.}
+  \stepbox{7}{done}{\faCalendarCheck}{ok}{Alex says OK}{Budget raised, it fits. From our tests.}
   % the novelty, on the far right
-  \node[sysfill, anchor=north east, minimum width=7.35in, minimum height=3.0in, text width=6.85in, inner sep=0.25in, align=left,
+  \node[sysfill, anchor=north east, minimum width=7.35in, minimum height=2.45in, text width=6.85in, inner sep=0.25in, align=left,
         font=\fontsize{40}{48}\selectfont\bfseries] at (46.6,0) {Roameo treats your budget as a limit, not a wish.};
   % arrows between the steps
   \foreach \i in {0,...,6} {
-    \fill[umb] ({(\i+1)*(\w+\g)-\g+0.02},-1.38) -- ++(0.2,-0.12) -- ++(-0.2,-0.12) -- cycle;
+    \fill[umb] ({(\i+1)*(\w+\g)-\g+0.02},-1.1) -- ++(0.2,-0.12) -- ++(-0.2,-0.12) -- cycle;
   }
 \end{tikzpicture}
 \end{document}

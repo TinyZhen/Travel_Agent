@@ -1,6 +1,6 @@
 """Copy the spoken text of slides/pres-note.md into the \\note{...} blocks of slides/slides.tex.
 
-Each timed slide's note becomes "(Ns, ends m:ss) <spoken text>", in slide order. Backup slides
+Each timed slide's note becomes "(N s, ends at M min SS s)" and the spoken text, in slide order. Backup slides
 (after \\appendix) keep their notes.
 
     python3 tools/sync_notes.py      (from docs/presentation)
@@ -25,7 +25,7 @@ def main() -> None:
             if line.strip() and not line.lstrip().startswith((">", "_", "#"))
         )
         spoken = spoken.replace("$", "\\$").replace("%", "\\%")
-        notes.append(f"\\textbf{{({seconds}s, ends {elapsed // 60}:{elapsed % 60:02d})}} {spoken}")
+        notes.append(f"\\textbf{{({seconds} s, ends at {elapsed // 60} min {elapsed % 60:02d} s)}} {spoken}")
     tex_path = HERE / "slides/slides.tex"
     tex = tex_path.read_text(encoding="utf-8")
     main_part, sep, backup = tex.partition("\\appendix")

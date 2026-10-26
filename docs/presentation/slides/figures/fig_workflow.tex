@@ -1,0 +1,46 @@
+% How Roameo works inside, in three bands that match the three ideas. Six helpers and a
+% coordinator. Four helpers use the AI model (backend/agents/intake.py, research.py, feedback.py,
+% guide.py). The planner and the checker are plain code (composer.py, critic.py), and the planner
+% uses the AI only to write the friendly summary. The coordinator is plain code (orchestrator.py)
+% and stops after five fixes. In demo mode, simple rules stand in for the AI (backend/llm.py).
+\documentclass[border=2pt]{standalone}
+\input{figstyle}
+\begin{document}
+\begin{tikzpicture}[x=1cm, y=1cm, font=\small,
+  helper/.style={fill=white, draw=umb, line width=0.8pt, rounded corners=3pt, inner sep=5pt, text width=2.3cm, align=left, text=ink, minimum height=1.6cm},
+  person/.style={fill=white, draw=ok, line width=0.8pt, rounded corners=3pt, inner sep=5pt, text width=2.3cm, align=left, text=ink, minimum height=1.2cm},
+  band/.style={rounded corners=4pt},
+  bandlab/.style={anchor=north west, inner sep=0pt, font=\small\bfseries, text=umb, align=left, text width=2.2cm}]
+  % bands
+  \fill[umbsoft, band] (0,4.3) rectangle (17.2,6.55);
+  \fill[faint, band] (0,2.0) rectangle (17.2,4.15);
+  \fill[oksoft, band] (0,0) rectangle (17.2,1.85);
+  \node[bandlab] at (0.2,6.35) {\markagents\enspace AI agents\\[1pt]\mdseries\footnotesize\textcolor{ink}{use the AI model, or simple rules in demo mode}};
+  \node[bandlab] at (0.2,3.95) {\markcode\enspace Plain code\\[1pt]\mdseries\footnotesize\textcolor{ink}{the same sum every time}};
+  \node[bandlab, text=ok] at (0.2,1.65) {\markyou\enspace You\\[1pt]\mdseries\footnotesize\textcolor{ink}{the final say}};
+  % helpers
+  \node[helper, anchor=north west] (reader) at (2.7,6.35) {\textbf{Request reader}\\ reads your sentence, asks what is missing};
+  \node[helper, anchor=north west] (research) at (5.6,6.35) {\textbf{Researcher}\\ chooses the searches, at most 8 steps};
+  \node[helper, anchor=north west] (change) at (11.4,6.35) {\textbf{Change reader}\\ turns your words into edits};
+  \node[helper, anchor=north west] (guide) at (8.5,6.35) {\textbf{Guide}\\ writes a visit guide for each stop};
+  \node[anchor=north west, text width=2.6cm, align=left, inner sep=0pt, text=ink, font=\footnotesize] at (14.4,6.25)
+    {Four helpers use the AI model. Each has one narrow job, and code checks what it returns.};
+  \node[helper, anchor=north west, draw=ink] (planner) at (5.6,3.95) {\textbf{Planner}\\ builds the days and prices every item};
+  \node[helper, anchor=north west, draw=ink] (checker) at (8.5,3.95) {\textbf{Checker}\\ adds up the total, tries one fix at a time};
+  \node[anchor=north west, text width=3.75cm, align=left, inner sep=0pt, text=ink, font=\footnotesize] at (13.35,3.95)
+    {The \textbf{coordinator}, also plain code, passes the work along and stops after five fixes. The AI never adds up the money.};
+  \node[person, anchor=north west] (type) at (2.7,1.7) {types a sentence, answers what is missing};
+  \node[person, anchor=north west] (choose) at (8.5,1.7) {chooses how to close the gap};
+  \node[person, anchor=north west] (ok) at (11.4,1.7) {asks for changes, or says OK};
+  % flow
+  \draw[syslink] (type.north) -- (reader.south);
+  \draw[syslink] (reader.east) -- (research.west);
+  \draw[syslink] (research.south) -- (planner.north);
+  \draw[syslink] (planner.east) -- (checker.west);
+  \draw[warmlink] ([xshift=-8pt]checker.south) -- ([xshift=-8pt]choose.north) node[midway, left, font=\footnotesize, text=accentink, inner sep=2pt] {still over};
+  \draw[syslink] (choose.east) -- (ok.west);
+  \draw[syslink] ([xshift=10pt]ok.north) -- ([xshift=10pt]change.south);
+  \draw[syslink] ([xshift=-14pt]change.south) |- (checker.east) node[pos=0.25, left, font=\footnotesize, inner sep=2pt] {edit};
+  \draw[oklink] (ok.east) -- ++(1.9,0) node[right, font=\footnotesize\bfseries, text=ok, align=left, inner sep=2pt, text width=1.7cm] {calendar file, after OK};
+\end{tikzpicture}
+\end{document}

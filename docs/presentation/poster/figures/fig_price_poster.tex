@@ -1,15 +1,15 @@
 % The checker's reviews in Alex's live run, in order (docs/screenshots/03_over_budget_escalation.png,
 % the step list): $1,235, then $984, $984, $1,014, $780, $780 against the $600 budget. At most five
-% fixes (backend/agents/orchestrator.py), then Roameo asks. Poster size, 14.6 by 5.3 in.
+% fixes (backend/agents/orchestrator.py), then Roameo asks. Poster size, 14.65 by 4.15 in.
 \RequirePackage{fix-cm}
 \documentclass[border=0pt]{standalone}
 \input{../../slides/figures/figstyle}
 \begin{document}
 \begin{tikzpicture}[x=1in, y=1in, font=\fontsize{28}{32}\selectfont]
-  \def\s{0.0029}   % inches per dollar
+  \def\s{0.0019}   % inches per dollar
   \def\bw{1.5}     % bar width
   \def\slot{2.4}
-  \useasboundingbox (-0.05,-1.45) rectangle (14.6,4.15);
+  \useasboundingbox (-0.05,-1.2) rectangle (14.6,2.95);
   % baseline
   \draw[muted, line width=1.5pt] (0,0) -- (14.45,0);
   % bars: the part up to the budget in UMB blue, the part over it in a light blue, the final gap in orange

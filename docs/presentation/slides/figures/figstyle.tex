@@ -34,9 +34,12 @@
 
 % The three idea marks, the same in the deck, the poster and the report.
 \newcommand{\markagents}{\faSearch}
-\newcommand{\markcode}{\ensuremath{\boldsymbol{\mathsf{\Sigma}}}}
+\newcommand{\markcode}{{\usefont{OT1}{cmss}{bx}{n}\char6}}
 \newcommand{\markyou}{\faUserCheck}
 
+% TikZ's align=left fixes the word space from the node's own font, so text set smaller or larger
+% inside a node gets odd gaps. Use each font's own word space instead.
+\tikzset{every node/.append style={execute at begin node={\spaceskip=0pt\xspaceskip=0pt\relax}}}
 \tikzset{
   >={Stealth[length=2.4mm,width=1.8mm]},
   every picture/.style={line cap=butt, line join=miter},

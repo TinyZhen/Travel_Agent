@@ -11,16 +11,14 @@ screenshots at native pixels, and the deck's vector figures rendered at 300 dpi.
 Run from the repository root. Pass --figures-only to refresh the figures without writing the docx.
 """
 
-import copy
+import datetime
 import re
-import shutil
 import subprocess
 import sys
 import zipfile
 from pathlib import Path
 
 from docx import Document
-from docx.enum.section import WD_SECTION
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
@@ -63,13 +61,50 @@ CROPS = {
     "alex_steps_critic.png": ("team_image5.png", (1056, 6130, 2672, 6900)),
     "alex_budget.png": ("team_image5.png", (1056, 220, 2672, 790)),
     "alex_question.png": ("team_image5.png", (210, 1375, 1010, 1965)),
-    "guide_crop.png": ("team_image3.png", (0, 0, 1616, 1800)),
+    "guide_crop.png": ("team_image3.png", (180, 340, 1460, 1700)),
 }
 STACKS = {  # two crops of one screenshot stacked into one figure, still at native pixels
     "detroit_crop.png": ("team_image4.png", [(210, 240, 1005, 545), (210, 1125, 1005, 1385)]),
 }
 VECTOR = ["fig_ideas", "fig_workflow", "fig_price", "fig_results", "fig_dataflow"]
 
+
+
+# Word reads its XML strictly in schema order, so every element added by hand goes into its place.
+PPR_ORDER = ["pStyle", "keepNext", "keepLines", "pageBreakBefore", "framePr", "widowControl", "numPr",
+             "suppressLineNumbers", "pBdr", "shd", "tabs", "suppressAutoHyphens", "kinsoku", "wordWrap",
+             "overflowPunct", "topLinePunct", "autoSpaceDE", "autoSpaceDN", "bidi", "adjustRightInd",
+             "snapToGrid", "spacing", "ind", "contextualSpacing", "mirrorIndents", "suppressOverlap", "jc",
+             "textDirection", "textAlignment", "textboxTightWrap", "outlineLvl", "divId", "cnfStyle", "rPr",
+             "sectPr", "pPrChange"]
+TBLPR_ORDER = ["tblStyle", "tblpPr", "tblOverlap", "bidiVisual", "tblStyleRowBandSize", "tblStyleColBandSize",
+               "tblW", "jc", "tblCellSpacing", "tblInd", "tblBorders", "shd", "tblLayout", "tblCellMar",
+               "tblLook", "tblCaption", "tblDescription"]
+TCPR_ORDER = ["cnfStyle", "tcW", "gridSpan", "hMerge", "vMerge", "tcBorders", "shd", "noWrap", "tcMar",
+              "textDirection", "tcFitText", "vAlign", "hideMark"]
+SETTINGS_AFTER_UPDATE_FIELDS = ["hdrShapeDefaults", "footnotePr", "endnotePr", "compat", "docVars", "rsids",
+                                "mathPr", "attachedSchema", "themeFontLang", "clrSchemeMapping",
+                                "doNotIncludeSubdocsInStats", "doNotAutoCompressPictures", "forceUpgrade",
+                                "captions", "readModeInkLockDown", "smartTagType", "schemaLibrary",
+                                "shapeDefaults", "doNotEmbedSmartTags", "decimalSymbol", "listSeparator"]
+
+
+def insert_ordered(parent, child, order):
+    """Insert child before the first existing sibling that must follow it in the schema, replacing
+    an existing element of the same name."""
+    name = child.tag.split("}")[1]
+    for old in parent.findall(qn(f"w:{name}")):
+        parent.remove(old)
+    later = order[order.index(name) + 1:]
+    for sibling in parent:
+        if not isinstance(sibling.tag, str):
+            continue
+        tag = sibling.tag.split("}")[1] if "}" in sibling.tag else sibling.tag
+        if tag in later or not sibling.tag.startswith("{http://schemas.openxmlformats.org/wordprocessingml"):
+            sibling.addprevious(child)
+            return child
+    parent.append(child)
+    return child
 
 # ---------------------------------------------------------------------------- figures
 
@@ -169,12 +204,8 @@ def new_num(doc, abstract_id: int, restart: bool) -> int:
 
 def set_num(paragraph_or_style_el, num_id: int):
     ppr = paragraph_or_style_el.get_or_add_pPr()
-    numpr = ppr.find(qn("w:numPr"))
-    if numpr is None:
-        numpr = parse_xml(f'<w:numPr {nsdecls("w")}><w:ilvl w:val="0"/><w:numId w:val="{num_id}"/></w:numPr>')
-        ppr.insert(0, numpr)
-    else:
-        numpr.find(qn("w:numId")).set(qn("w:val"), str(num_id))
+    numpr = parse_xml(f'<w:numPr {nsdecls("w")}><w:ilvl w:val="0"/><w:numId w:val="{num_id}"/></w:numPr>')
+    insert_ordered(ppr, numpr, PPR_ORDER)
 
 
 def setup_styles(doc):
@@ -213,9 +244,16 @@ def setup_styles(doc):
     code.paragraph_format.space_after = Pt(0)
     code.paragraph_format.line_spacing = 1.0
     code.paragraph_format.left_indent = Inches(0.2)
-    code.element.get_or_add_pPr().append(parse_xml(f'<w:shd {nsdecls("w")} w:val="clear" w:color="auto" w:fill="F2F4F7"/>'))
+    insert_ordered(code.element.get_or_add_pPr(),
+                   parse_xml(f'<w:shd {nsdecls("w")} w:val="clear" w:color="auto" w:fill="F2F4F7"/>'), PPR_ORDER)
     inline = styles.add_style("Inline Code", WD_STYLE_TYPE.CHARACTER)
     set_style_font(inline, size=9.5, font="Consolas")
+    for name, before in (("toc 1", 5), ("toc 2", 0)):  # a compact contents list that fits one page
+        toc = styles[name]
+        toc.paragraph_format.space_before = Pt(before)
+        toc.paragraph_format.space_after = Pt(1)
+        toc.paragraph_format.line_spacing = 1.0
+        set_style_font(toc, size=10, bold=(name == "toc 1"))
     tt = styles.add_style("Table Text", WD_STYLE_TYPE.PARAGRAPH)
     tt.base_style = styles["Normal"]
     set_style_font(tt, size=9.5)
@@ -347,28 +385,40 @@ class Builder:
         tbl = table._tbl
         tblpr = tbl.tblPr
         total = sum(widths)
-        tblpr.append(parse_xml(f'<w:tblW {nsdecls("w")} w:w="{int(total * 1440)}" w:type="dxa"/>'))
-        tblpr.append(parse_xml(f'<w:tblLayout {nsdecls("w")} w:type="fixed"/>'))
-        tblpr.append(parse_xml(
+        insert_ordered(tblpr, parse_xml(f'<w:tblW {nsdecls("w")} w:w="{int(total * 1440)}" w:type="dxa"/>'),
+                       TBLPR_ORDER)
+        insert_ordered(tblpr, parse_xml(
             f'<w:tblBorders {nsdecls("w")}><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/>'
-            '<w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'))
-        tblpr.append(parse_xml(
+            '<w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'), TBLPR_ORDER)
+        insert_ordered(tblpr, parse_xml(f'<w:tblLayout {nsdecls("w")} w:type="fixed"/>'), TBLPR_ORDER)
+        insert_ordered(tblpr, parse_xml(
             f'<w:tblCellMar {nsdecls("w")}><w:top w:w="50" w:type="dxa"/><w:left w:w="90" w:type="dxa"/>'
-            '<w:bottom w:w="50" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar>'))
+            '<w:bottom w:w="50" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar>'), TBLPR_ORDER)
         grid = tbl.tblGrid
         for col, w in zip(grid.findall(qn("w:gridCol")), widths):
             col.set(qn("w:w"), str(int(w * 1440)))
+        stripe = 0
         for r_i, values in enumerate([header] + rows):
             row = table.rows[r_i]
             if r_i == 0:
                 row._tr.get_or_add_trPr().append(parse_xml(f'<w:tblHeader {nsdecls("w")}/>'))
             row._tr.get_or_add_trPr().append(parse_xml(f'<w:cantSplit {nsdecls("w")}/>'))
+            if isinstance(values, str):  # a group row across the whole table
+                stripe = 0
+                cell = row.cells[0].merge(row.cells[-1])
+                cell.width = Inches(total)
+                cell.paragraphs[0].style = self.doc.styles["Table Text"]
+                cell.paragraphs[0].paragraph_format.space_before = Pt(4)
+                add_inline(cell.paragraphs[0], values, bold=True, color=UMB)
+                continue
+            stripe += 1
             for c_i, (cell, value) in enumerate(zip(row.cells, values)):
                 cell.width = Inches(widths[c_i])
                 tcpr = cell._tc.get_or_add_tcPr()
-                fill = HEADER_FILL if r_i == 0 else (ROW_FILL if r_i % 2 == 0 else None)
+                fill = HEADER_FILL if r_i == 0 else (ROW_FILL if stripe % 2 == 0 and r_i > 0 else None)
                 if fill:
-                    tcpr.append(parse_xml(f'<w:shd {nsdecls("w")} w:val="clear" w:color="auto" w:fill="{fill}"/>'))
+                    insert_ordered(tcpr, parse_xml(
+                        f'<w:shd {nsdecls("w")} w:val="clear" w:color="auto" w:fill="{fill}"/>'), TCPR_ORDER)
                 cell.paragraphs[0].style = self.doc.styles["Table Text"]
                 lines = value if isinstance(value, list) else [value]
                 for l_i, line in enumerate(lines):
@@ -389,10 +439,11 @@ class Builder:
         p.paragraph_format.space_after = Pt(36)
         w, h = Image.open(LOGO).size
         p.add_run().add_picture(str(LOGO), width=Inches(2.2), height=Inches(2.2 * h / w))
+        colours = {"umb": UMB, "navy": NAVY, "ink": INK, "grey": GREY}
         for text, size, bold, color, after in t["lines"]:
             q = d.add_paragraph()
             q.paragraph_format.space_after = Pt(after)
-            add_inline(q, text, bold=bold, size=size, color=color)
+            add_inline(q, text, bold=bold, size=size, color=colours[color])
 
     def contents(self):
         """A TOC field whose cached result lists the headings, refreshed by Word on opening."""
@@ -460,8 +511,8 @@ def set_footer(doc):
 
 def set_update_fields(doc):
     settings = doc.settings.element
-    if settings.find(qn("w:updateFields")) is None:
-        settings.append(parse_xml(f'<w:updateFields {nsdecls("w")} w:val="true"/>'))
+    order = ["updateFields"] + SETTINGS_AFTER_UPDATE_FIELDS
+    insert_ordered(settings, parse_xml(f'<w:updateFields {nsdecls("w")} w:val="true"/>'), order)
 
 
 def render(builder: Builder):
@@ -513,6 +564,8 @@ def main() -> int:
     cp.last_modified_by = "Zhen Lu, Noctis Zhang"
     cp.keywords = "Roameo, agentic AI, trip planning"
     cp.comments = ""
+    cp.revision = (cp.revision or 0) + 1
+    cp.modified = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0, tzinfo=None)
     doc.save(str(OUTPUT))
     words = sum(len(re.findall(r"[A-Za-z0-9$][\w'$.,/%-]*", p.text)) for p in Document(str(OUTPUT)).paragraphs)
     table_words = sum(len(re.findall(r"[A-Za-z0-9$][\w'$.,/%-]*", c.text))

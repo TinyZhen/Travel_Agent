@@ -1,16 +1,19 @@
-% Roameo: agents plan the trip, you make the call. One-slide 2-minute presentation (landscape
-% poster, 16:9). Authors: Zhen Lu and Noctis Zhang.
-% Built on the Gemini beamerposter theme (https://github.com/anishathalye/gemini, MIT License,
-% see LICENSE-gemini.md) with a neutral colour theme (beamercolorthemeroameo.sty).
+% Roameo, the one-slide poster (landscape, 48 by 27 in, exactly 16:9, so it projects as one slide
+% and prints as a flyer). Authors: Zhen Lu and Noctis Zhang, Department of Computer Science,
+% University of Massachusetts Boston.
+% Built on the Gemini beamerposter theme by Anish Athalye (github.com/anishathalye/gemini, MIT
+% License, see LICENSE-gemini.md) with the UMass Boston colours (beamercolorthemeumb.sty). Every
+% decorative rule and block separator of the theme is switched off below.
 % Build: latexmk -pdflatex='lualatex -interaction nonstopmode' -pdf poster.tex
+%   (the figures first: cd figures and run pdflatex on fig_strip, fig_price_poster, fig_dataflow_poster)
 %
-% The story and the layout follow ../STORY_PLAN.md. Every number comes from the repository: the
-% evaluation files in docs/, README.md, the code under backend/, and one real run of the app
-% shown in docs/screenshots/03_over_budget_escalation.png. The figures are the poster variants in
-% ../slides/figures/ (fig_story_v, fig_system_poster, fig_results_poster, fig_qr).
+% Layout and wording follow ../REVISION_PLAN.md section 6: a navy header, Alex's trip as one strip,
+% one column per main idea (three parts and how we tested it), and a bottom band of three blocks.
+% Every number comes from the repository: one live run of the app
+% (docs/screenshots/03_over_budget_escalation.png, cropped by ../tools/crop_screenshots.py),
+% docs/evaluation_results.md and docs/evaluation_results_llm.md, README.md and backend/.
 
-\documentclass[final,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhang},pdftitle={Roameo: agents plan the trip, you make the call}}]{beamer}
-% Keep the PDF metadata to title and author.
+\documentclass[final,usepdftitle=false,hyperref={pdfauthor={Zhen Lu, Noctis Zhang},pdftitle={Roameo plans your trip and lets you decide on the money}}]{beamer}
 \pdfvariable suppressoptionalinfo 1023
 \hypersetup{pdfcreator={},pdfproducer={}}
 
@@ -19,127 +22,174 @@
 % ====================
 
 \usepackage[T1]{fontenc}
-% 48 x 27 inches, exactly 16:9, so it projects as one slide and prints as a flyer.
 \usepackage[orientation=landscape,size=custom,width=121.92,height=68.58,scale=1.25]{beamerposter}
 \usetheme{gemini}
-\usecolortheme{roameo}
-% Projection needs heavier strokes than the template's Lato Light.
-\setsansfont{Lato}[UprightFont=*-Regular, ItalicFont=*-Italic, BoldFont=*-Bold, BoldItalicFont=*-BoldItalic]
-\addtobeamertemplate{block begin}{}{\raggedright}
-\addtobeamertemplate{block end}{}{\vspace*{-1ex}}
+\usecolortheme{umb}
+% The same type family as the deck and the figures (Helvetica).
+\setsansfont{TeX Gyre Heros}
+\setbeamerfont{headline}{family=\sffamily}
 \usepackage{graphicx}
-\usepackage{anyfontsize}
 \usepackage{fontawesome5}
+\usepackage{amsmath}
 \usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{qrcode}
 \hyphenpenalty=10000
 \exhyphenpenalty=10000
-\setlength{\parskip}{0.6ex}
 
-\graphicspath{{../slides/figures/}{../screenshots/}}
-
-\definecolor{accent}{HTML}{C2410C}
-\definecolor{ok}{HTML}{4D7C0F}
-\definecolor{muted}{HTML}{5F6368}
-
-% ====================
-% Lengths
-% ====================
-
-\newlength{\sepwidth}
-\newlength{\colL}
-\newlength{\colC}
-\newlength{\colR}
-\setlength{\sepwidth}{0.0125\paperwidth}
-\setlength{\colL}{0.262\paperwidth}
-\setlength{\colC}{0.392\paperwidth}
-\setlength{\colR}{0.296\paperwidth}
-\newcommand{\separatorcolumn}{\begin{column}{\sepwidth}\end{column}}
-
-\setbeamerfont{block title}{family=\Raleway,size=\Large,series=\bfseries}
+% No decorative lines. The theme's orange headline rule and the block separators are switched off,
+% and the poster draws its own header.
+\setbeamercolor{headline rule}{}
+\setbeamercolor{block separator}{bg=white}
+\setbeamercolor{block alerted separator}{bg=white}
+\setbeamercolor{block example separator}{bg=white}
+\setbeamertemplate{headline}{}
 \setbeamertemplate{footline}{}
-\newcommand{\figcaption}[1]{{\normalsize\color{muted}#1\par}}
-\newcommand{\option}[1]{\tikz[baseline=(b.base)]\node[draw=roameoteal, line width=2pt, rounded corners=16pt, inner sep=10pt, text=roameoink] (b) {#1};}
+\setbeamertemplate{navigation symbols}{}
 
-% ====================
-% Title
-% ====================
+\graphicspath{{figures/}{../screenshots/}{logos/}}
 
-\title{Roameo: agents plan the trip, you make the call}
-\author{An AI trip planner that does the research and the math, and asks before it goes over your budget}
-\institute{Zhen Lu \quad Noctis Zhang \qquad PEAAII AI Applications Hackathon 2026, Agentic AI \qquad October 2026}
+% The calm palette (the same values as ../slides/figures/figstyle.tex).
+\definecolor{ink}{HTML}{1A1A1A}
+\definecolor{umb}{HTML}{005A8B}
+\definecolor{umbsoft}{HTML}{E9F2F8}
+\definecolor{primary}{HTML}{08457E}
+\definecolor{navy}{HTML}{132245}
+\definecolor{accent}{HTML}{FF791F}
+\definecolor{accentink}{HTML}{C4540A}
+\definecolor{ok}{HTML}{2E7D32}
+\definecolor{muted}{HTML}{5F6368}
+\definecolor{faint}{HTML}{F4F5F7}
+\newcommand{\markagents}{\faSearch}
+\newcommand{\markcode}{\scalebox{1.25}{\ensuremath{\boldsymbol{\Sigma}}}}
+\newcommand{\markyou}{\faUserCheck}
 
-\logoright{\includegraphics[height=7.2cm]{fig_qr.pdf}}
+% Type sizes. Body 28 pt, part titles 34 pt, column heads 50 pt.
+\newcommand{\body}{\fontsize{28}{34}\selectfont}
+\newcommand{\smallbody}{\fontsize{26}{31}\selectfont}
+\newcommand{\parttitle}[1]{{\fontsize{34}{40}\selectfont\bfseries\color{primary}#1\par}\vspace{0.12in}}
+\newcommand{\colhead}[2]{{\fontsize{50}{58}\selectfont\bfseries\color{umb}#1\hspace{0.35em}\color{primary}#2\par}\vspace{0.18in}}
+\newcommand{\blockhead}[1]{{\fontsize{38}{44}\selectfont\bfseries\color{primary}#1\par}\vspace{0.14in}}
+% A screenshot crop framed in orange, only for the $180 gap.
+\newcommand{\hotshot}[2][]{\tikz[baseline=(s.base)]\node[draw=accent, line width=5pt, inner sep=2pt, rounded corners=4pt] (s) {\includegraphics[#1]{#2}};}
 
-% ====================
-% Body
-% ====================
+% Geometry in inches, from the top left corner of the page.
+\newcommand{\at}[2]{($(current page.north west)+(#1in,-#2in)$)}
+\newlength{\colw}\setlength{\colw}{15.2in}
+\newlength{\colin}\setlength{\colin}{14.5in}
 
 \begin{document}
+\begin{frame}[plain]
+\begin{tikzpicture}[remember picture, overlay]
 
-\begin{frame}[t]
-\begin{columns}[t]
-\separatorcolumn
+% ==================== Header, navy
+\fill[navy] \at{0}{0} rectangle \at{48}{4.2};
+\node[anchor=west, inner sep=0pt] at \at{0.7}{2.1} {\includegraphics[width=7.4in]{White-UMB-logo-lockup.png}};
+\node[anchor=north, inner sep=0pt, text=white, align=center] at \at{23.9}{0.32} {%
+  {\fontsize{100}{106}\selectfont\bfseries Roameo}{\fontsize{58}{64}\selectfont\ plans your trip and lets you decide on the money}\\[0.1in]
+  {\fontsize{46}{54}\selectfont\bfseries \markagents\hspace{0.3em}AI agents do the legwork.\hspace{1em}\markcode\hspace{0.3em}Code checks the money.\hspace{1em}\markyou\hspace{0.3em}You make the call.}\\[0.08in]
+  {\fontsize{30}{36}\selectfont An agent here is an AI helper with one job.}\\[0.16in]
+  {\fontsize{33}{40}\selectfont\bfseries Zhen Lu and Noctis Zhang}\\[0.02in]
+  {\fontsize{28}{34}\selectfont Department of Computer Science, University of Massachusetts Boston}};
+\node[anchor=north east, inner sep=0pt, text=white, align=right, font=\fontsize{27}{32}\selectfont] at \at{47.3}{0.32} {PEAAII AI Applications\\Hackathon 2026, Agentic AI};
+\node[anchor=north east, fill=white, inner sep=0.1in] (qrcode) at \at{47.3}{1.42} {\qrcode[height=2.0in]{https://github.com/TinyZhen/Travel_Agent}};
+\node[anchor=north east, fill=white, inner sep=0.1in] (qrtry) at \at{44.75}{1.42} {\qrcode[height=2.0in]{https://roameo-l13h.onrender.com/}};
+\node[anchor=north, text=white, font=\fontsize{30}{34}\selectfont\bfseries, inner sep=0pt] at ($(qrtry.south)+(0,-0.1in)$) {Try it};
+\node[anchor=north, text=white, font=\fontsize{30}{34}\selectfont\bfseries, inner sep=0pt] at ($(qrcode.south)+(0,-0.1in)$) {Code};
 
-% ---------------------------------------------------------------- left: the story
-\begin{column}{\colL}
-  \begin{block}{Alex has \$600 and one sentence}
-    \begin{center}
-      \includegraphics[width=\linewidth]{fig_story_v.pdf}
-    \end{center}
-    \vspace{0.2cm}
+% ==================== Alex's trip, one strip
+\node[anchor=north west, inner sep=0pt] at \at{0.7}{4.45} {\includegraphics[width=46.6in]{fig_strip.pdf}};
 
-    Words and numbers: \textbf{one real run} of the app, with live flights, hotels and events. Alex is an illustration.
+% ==================== Three columns, one per idea
+\fill[umbsoft, rounded corners=8pt] \at{0.7}{7.15} rectangle \at{15.9}{21.95};
+\fill[umbsoft, rounded corners=8pt] \at{16.4}{7.15} rectangle \at{31.6}{21.95};
+\fill[umbsoft, rounded corners=8pt] \at{32.1}{7.15} rectangle \at{47.3}{21.95};
 
-    Built for \textbf{students and budget travellers} on short trips, and for small groups who split the cost.
-  \end{block}
-\end{column}
+% ---- Column 1, AI agents do the legwork
+\node[anchor=north west, inner sep=0pt] at \at{1.05}{7.45} {\begin{minipage}[t][14.25in][t]{\colin}\raggedright\body
+  \colhead{\markagents}{AI agents do the legwork}
+  \parttitle{They ask for what is missing}
+  \begin{minipage}[t]{8.5in}\vspace{0pt}\includegraphics[width=8.5in]{alex_ask.png}\end{minipage}\hfill
+  \begin{minipage}[t]{5.7in}\vspace{0pt}\raggedright Alex did not say where from or when, so Roameo asks. It never guesses a city or a date, because a guess gives a useless plan. It assumes one traveler and says so.\end{minipage}
+  \vfill
+  \parttitle{They choose the searches}
+  {\fontsize{64}{70}\selectfont\bfseries\color{umb}8}\,flights\hspace{1.1em}{\fontsize{64}{70}\selectfont\bfseries\color{umb}18}\,hotels\hspace{1.1em}{\fontsize{64}{70}\selectfont\bfseries\color{umb}59}\,events\hspace{1.1em}compared for Alex\par\vspace{0.1in}
+  Past years' weather for those dates said cold, with a 67\% chance of rain. So Roameo also looked for indoor places, holiday markets and ice skating.\par
+  \vfill
+  \parttitle{They turn your words into changes}
+  \begin{minipage}[t]{8.5in}\vspace{0pt}\includegraphics[width=8.5in]{alex_replies.png}\end{minipage}\hfill
+  \begin{minipage}[t]{5.7in}\vspace{0pt}\raggedright Say make it cheaper or more museums. Roameo edits the plan instead of starting over, and lists what changed.\end{minipage}
+  \vfill
+  \colorbox{white}{\begin{minipage}{14.2in}\raggedright\vspace{0.12in}
+    {\fontsize{32}{38}\selectfont\bfseries\color{ok}\faCheckCircle\hspace{0.3em}How we tested it\par}\vspace{0.06in}
+    A test is a conversation we wrote in advance, typed into Roameo, with code that checks the answer. Tests check that it asks when a date, a city or the starting point is missing. Only the AI understood first weekend of December.\vspace{0.12in}\end{minipage}}
+\end{minipage}};
 
-\separatorcolumn
+% ---- Column 2, Code checks the money
+\node[anchor=north west, inner sep=0pt] at \at{16.75}{7.45} {\begin{minipage}[t][14.25in][t]{\colin}\raggedright\body
+  \colhead{\markcode}{Code checks the money}
+  \parttitle{Code adds up every total}
+  \includegraphics[width=\colin]{alex_costs.png}\par\vspace{0.12in}
+  The flight and hotel are live prices. Food and local transit are flat daily estimates, and say so. Code adds them to \$780, exact for the prices shown.\par
+  \vfill
+  \parttitle{It tries one fix at a time, at most five}
+  \includegraphics[width=\colin]{fig_price_poster.pdf}\par\vspace{0.1in}
+  Not every fix saves money, so code checks the total after each one.\par
+  \vfill
+  \parttitle{It shows the gap, never hides it}
+  \begin{minipage}[t]{8.4in}\vspace{0pt}\hotshot[width=8.1in, trim=0 0 750 0, clip]{alex_total.png}\end{minipage}\hfill
+  \begin{minipage}[t]{5.9in}\vspace{0pt}\raggedright Why code and not the AI? The total is checked after every change, six times for Alex. Code gives the same exact sum every time, and we can test it.\end{minipage}
+  \vfill
+  \colorbox{white}{\begin{minipage}{14.2in}\raggedright\vspace{0.12in}
+    {\fontsize{32}{38}\selectfont\bfseries\color{ok}\faCheckCircle\hspace{0.3em}How we tested it\par}\vspace{0.06in}
+    All 23 core tests pass in demo mode, practice runs with sample prices, and in each of 3 runs with the AI on. With a \$300 budget, it reports \$478 over.\vspace{0.12in}\end{minipage}}
+\end{minipage}};
 
-% ---------------------------------------------------------------- centre: the moment and the system
-\begin{column}{\colC}
-  \begin{block}{Over budget? It stops and asks you}
-    \begin{columns}[T]
-      \begin{column}{0.60\linewidth}
-        \includegraphics[width=\linewidth]{esc_budget.png}
-        \figcaption{Alex's plan in the app: \$180 over the \$600 budget, waiting for approval.}
-      \end{column}
-      \begin{column}{0.38\linewidth}
-        \includegraphics[width=0.9\linewidth]{esc_question.png}
-      \end{column}
-    \end{columns}
-    \vspace{0.3cm}
-    {\Large\bfseries\color{roameoink}Your call:}\hspace{0.8em}\option{raise the budget}\hspace{0.5em}\option{shorten to 2 nights}\hspace{0.5em}\option{drive instead of flying}
-  \end{block}
-  \begin{block}{AI agents gather, code checks the money, you decide}
-    \textbf{Why agents, and not one prompt?} Each step depends on the one before: the questions, what the tools found, the price after each repair. The agents choose what to look up, and plain code does the arithmetic.
-    \begin{center}\includegraphics[width=0.96\linewidth]{fig_system_poster.pdf}\end{center}
-  \end{block}
-\end{column}
+% ---- Column 3, You make the call
+\node[anchor=north west, inner sep=0pt] at \at{32.45}{7.45} {\begin{minipage}[t][14.25in][t]{\colin}\raggedright\body
+  \colhead{\markyou}{You make the call}
+  89\% of travelers want AI help planning, but only 12\% would let it decide alone [2].\par
+  \vfill
+  \parttitle{You choose how to close the gap}
+  \begin{minipage}[t]{7.9in}\vspace{0pt}\includegraphics[width=7.9in]{alex_question.png}\end{minipage}\hfill
+  \begin{minipage}[t]{6.3in}\vspace{0pt}\raggedright Raise the budget, stay two nights, or drive. From our tests, when the budget is raised, the plan is rebuilt, checked again, and fits.\end{minipage}
+  \vfill
+  \parttitle{You see every step and every assumption}
+  \includegraphics[width=10.8in]{alex_notes.png}\par\vspace{0.12in}
+  The list of what the agents did shows all 25 steps of Alex's run. The plan says which prices are live and which are estimates.\par
+  \vfill
+  \parttitle{Nothing is final until you say OK}
+  \includegraphics[height=0.95in]{alex_approve.png}\hspace{0.5in}\includegraphics[height=0.8in]{alex_badge.png}\hspace{0.5in}{\fontsize{60}{60}\selectfont\color{ok}\faCalendarCheck}\par\vspace{0.14in}
+  Saying OK only downloads a calendar file. Roameo never books or pays, because paying is a decision a person should make, on a site they trust. You book it yourself.\par
+  \vfill
+  \colorbox{white}{\begin{minipage}{14.2in}\raggedright\vspace{0.12in}
+    {\fontsize{32}{38}\selectfont\bfseries\color{ok}\faCheckCircle\hspace{0.3em}How we tested it\par}\vspace{0.06in}
+    Nothing counts as approved until you say OK. We ran the AI tests 3 times because the AI can answer differently each time. We wrote the tests ourselves, on sample prices, so this is a small, honest check, not a user study.\vspace{0.12in}\end{minipage}}
+\end{minipage}};
 
-\separatorcolumn
+% ==================== Bottom band, three blocks
+\fill[faint, rounded corners=8pt] \at{0.7}{22.25} rectangle \at{15.9}{26.7};
+\fill[faint, rounded corners=8pt] \at{16.4}{22.25} rectangle \at{31.6}{26.7};
+\fill[faint, rounded corners=8pt] \at{32.1}{22.25} rectangle \at{47.3}{26.7};
 
-% ---------------------------------------------------------------- right: evidence and how to try it
-\begin{column}{\colR}
-  \begin{block}{All 23 core tests pass in both modes}
-    \begin{center}
-      \includegraphics[width=\linewidth]{fig_results_poster.pdf}
-    \end{center}
-    A test is a scripted conversation with checks on the result, such as \emph{total within budget}: 51 checks in the 23 core tests. AI mode ran 3 times. We wrote the tests, on sample prices, so this is a small, honest check, not a user study.
-  \end{block}
-  \begin{block}{Try it, deploy it}
-    {\color{roameoteal}\faTerminal}\enspace No keys: demo mode on a laptop in about 3 minutes.
+\node[anchor=north west, inner sep=0pt] at \at{1.05}{22.5} {\begin{minipage}[t][4.05in][t]{\colin}\raggedright\body
+  \blockhead{Who it is for, and who else helps plan trips}
+  Built for students on short trips, budget travelers and small groups who split the cost, first student clubs. A club of four sees 2 rooms and the cost per person before anyone pays. The code is public on GitHub.\par\vspace{0.08in}
+  Chat assistants such as ChatGPT and Gemini answer in a chat. Expedia's Romie helps plan, shop and book inside Expedia [3]. Planner apps such as Mindtrip, Layla and Wonderplan build itineraries, says a review [4]. Others use spreadsheets, group chats or a travel agency. We have not tested the others.\par
+\end{minipage}};
 
-    {\color{roameoteal}\faGlobe}\enspace One Render URL, an access code, 60 requests per visitor per hour. If the live demo asks for an access code, ask us.
+\node[anchor=north west, inner sep=0pt] at \at{16.75}{22.5} {\begin{minipage}[t][4.05in][t]{\colin}\raggedright\body
+  \blockhead{Responsible use and limits}
+  \begin{minipage}[t]{8.8in}\vspace{0.1in}\includegraphics[width=8.8in]{fig_dataflow_poster.pdf}\end{minipage}\hfill
+  \begin{minipage}[t]{5.5in}\vspace{0pt}\raggedright\smallbody Never books or pays. No accounts, trips stay in memory until a restart. Sample prices are labeled. AI tips can be wrong. Not yet, 8 demo cities and no user study, so next is a pilot with 5 to 10 students.\end{minipage}
+\end{minipage}};
 
-    {\color{roameoteal}\faKey}\enspace Any OpenRouter model. Each tool switches to live data on its own.
+\node[anchor=north west, inner sep=0pt] at \at{32.45}{22.5} {\begin{minipage}[t][4.05in][t]{\colin}\raggedright\body
+  \blockhead{Three ideas, one trip}
+  {\bfseries AI agents did the legwork for Alex. Code checked the money and found the \$180 gap. Alex made the call.\par}\vspace{0.1in}
+  {\smallbody Thanks to the PEAAII organizers. Data from Google Flights, Hotels, Events and Maps through SerpApi, Ticketmaster, Open-Meteo and OpenStreetMap. AI model Claude Haiku 5.5 through OpenRouter. Poster theme Gemini by Anish Athalye. Sources [2] Booking.com 2025, [3] Expedia 2024, [4] Fast.io 2026. Try it at roameo-l13h.onrender.com, code at github.com/TinyZhen/Travel\_Agent.\par}
+\end{minipage}};
 
-    {Limits: sample data for 7 cities, food and transit are estimates, many events have no price, no user study yet.}
-  \end{block}
-\end{column}
-
-\separatorcolumn
-\end{columns}
+\end{tikzpicture}
 \end{frame}
-
 \end{document}

@@ -16,18 +16,18 @@
     3/{\markagents}/{Adapting to weather, season and what you love}/4,
     4/{\markcode}/{Planning basics, such as a group of four getting 2 rooms}/4,
     5/{\markyou}/{Nothing is final without your OK}/1} {
-    \pgfmathsetmacro{\y}{-\row*1.05+0.25}
+    \pgfmathsetmacro{\y}{-\row*1.22+0.3}
     \node[anchor=east, text width=4.15cm, align=right, inner sep=0pt, text=ink] at (4.25,\y) {\grp};
     \node[text=umb, font=\normalsize, inner sep=0pt] at (4.62,\y) {\mk};
     \fill[ok] (5.0,\y-0.27) rectangle ++(\n*\unit,0.54);
     \node[anchor=west, font=\small\bfseries, text=ok, inner sep=3pt] at (5.0+\n*\unit,\y) {\n\ of \n};
   }
   % the two known limits, reported apart
-  \node[anchor=east, text width=4.15cm, align=right, inner sep=0pt, text=muted] at (4.25,-5.95) {Known limits, not in the 23};
-  \fill[gridgrey] (5.0,-5.95+0.05) rectangle ++(2*\unit,0.36);
-  \fill[quiet] (5.0,-5.95+0.05) rectangle ++(1*\unit,0.36);
-  \node[anchor=west, font=\footnotesize, text=muted, inner sep=3pt] at (5.0+2*\unit,-5.95+0.23) {1 of 2 in demo mode};
-  \fill[ok] (5.0,-5.95-0.41) rectangle ++(2*\unit,0.36);
-  \node[anchor=west, font=\footnotesize\bfseries, text=ok, inner sep=3pt] at (5.0+2*\unit,-5.95-0.23) {2 of 2 with the AI};
+  \node[anchor=east, text width=4.15cm, align=right, inner sep=0pt, text=muted] at (4.25,-6.85) {Known limits, not in the 23};
+  \fill[gridgrey] (5.0,-6.85+0.05) rectangle ++(2*\unit,0.36);
+  \fill[quiet] (5.0,-6.85+0.05) rectangle ++(1*\unit,0.36);
+  \node[anchor=west, font=\footnotesize, text=muted, inner sep=3pt] at (5.0+2*\unit,-6.85+0.23) {1 of 2 in demo mode};
+  \fill[ok] (5.0,-6.85-0.41) rectangle ++(2*\unit,0.36);
+  \node[anchor=west, font=\footnotesize\bfseries, text=ok, inner sep=3pt] at (5.0+2*\unit,-6.85-0.23) {2 of 2 with the AI};
 \end{tikzpicture}
 \end{document}

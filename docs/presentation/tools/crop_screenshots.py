@@ -24,6 +24,7 @@ CROPS = {
     "winter_warn.png": ("08_winter_detroit.png", (210, 1125, 1005, 1385)),
     "guide_top.png": ("07_visit_guide.png", (0, 330, 1616, 1160)),
     # Alex's live run, one crop per point of the story (idea 1, 2 and 3).
+    "alex_sentence.png": ("03_over_budget_escalation.png", (475, 248, 985, 332)),
     "alex_ask.png": ("03_over_budget_escalation.png", (230, 240, 990, 640)),
     "alex_searches.png": ("03_over_budget_escalation.png", (1095, 5535, 2640, 5810)),
     "alex_season.png": ("03_over_budget_escalation.png", (1095, 5815, 2640, 6125)),

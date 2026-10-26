@@ -4,25 +4,25 @@
 \documentclass[border=2pt]{standalone}
 \input{figstyle}
 \begin{document}
-\begin{tikzpicture}[x=1cm, y=1cm, font=\small,
+\begin{tikzpicture}[x=1cm, y=1cm, font=\normalsize,
   box/.style={fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=#1, align=left, text=ink},
   box/.default=3.1cm,
-  lab/.style={font=\footnotesize, text=ink, align=left, inner sep=2pt}]
+  lab/.style={font=\small, text=ink, align=left, inner sep=2pt}]
   % the three places
   \node[box=2.9cm, anchor=north west] (you) at (0,0) {\textcolor{umb}{\faLaptop}\enspace\textbf{You}\\[1pt]in your browser};
-  \node[box=3.3cm, anchor=north west] (srv) at (4.55,0) {\textcolor{umb}{\faServer}\enspace\textbf{Roameo server}\\[1pt]No accounts. Your trip stays in memory until it restarts. API keys stay here.};
-  \node[box=3.0cm, anchor=north west] (ai) at (10.0,0.9) {\textcolor{umb}{\faRobot}\enspace\textbf{AI model}\\[1pt]through OpenRouter, only in AI mode};
-  \node[box=3.0cm, anchor=north west] (search) at (10.0,-1.75) {\textcolor{umb}{\faSearch}\enspace\textbf{Search services}\\[1pt]flights, hotels, events, places, weather};
+  \node[box=3.3cm, anchor=north west] (srv) at (5.5,0) {\textcolor{umb}{\faServer}\enspace\textbf{Roameo server}\\[1pt]No accounts. Your trip stays in memory until it restarts. API keys stay here.};
+  \node[box=3.75cm, anchor=north west] (ai) at (11.6,1.0) {\textcolor{umb}{\faRobot}\enspace\textbf{AI model}\\[1pt]through OpenRouter, only in AI mode};
+  \node[box=3.75cm, anchor=north west] (search) at (11.6,-1.95) {\textcolor{umb}{\faSearch}\enspace\textbf{Search services}\\[1pt]flights, hotels, events, places, weather};
   \node[box=2.9cm, anchor=north west] (osm) at (0,-3.25) {\textcolor{umb}{\faMap}\enspace\textbf{OpenStreetMap}\\[1pt]map and street routes};
   % what travels
-  \draw[syslink] ([yshift=3pt]you.east) -- ([yshift=3pt]srv.west |- you.east) node[midway, above, lab, text width=1.5cm] {what you type};
-  \draw[oklink] ([yshift=-9pt]srv.west |- you.east) -- ([yshift=-9pt]you.east) node[midway, below, lab, text width=1.55cm, text=ok] {calendar file, only after your OK};
-  \draw[syslink] (srv.east |- ai.west) ++(0,0) -- (ai.west) node[pos=0.45, above, lab, text width=1.9cm] {what you type, trip details};
-  \draw[syslink] (srv.east |- search.west) -- (search.west) node[pos=0.45, below, lab, text width=1.9cm] {city, dates, airport codes};
+  \draw[syslink] ([yshift=3pt]you.east) -- ([yshift=3pt]srv.west |- you.east) node[midway, above, lab, text width=2.0cm, align=center] {what you type};
+  \draw[oklink] ([yshift=-9pt]srv.west |- you.east) -- ([yshift=-9pt]you.east) node[midway, below, lab, text width=2.0cm, align=center, text=ok] {calendar file, only after your OK};
+  \draw[syslink] (srv.east) -- ++(0.45,0) |- (ai.west) node[pos=0.78, above, lab, text width=2.0cm, align=center] {what you type, trip details};
+  \draw[syslink] (srv.east) -- ++(0.45,0) |- (search.west) node[pos=0.78, below, lab, text width=2.0cm, align=center] {city, dates, airport codes};
   \draw[syslink] (you.south) -- (osm.north) node[midway, right, lab] {your browser loads it};
   % the boundary that matters
-  \node[anchor=north west, text width=8.6cm, align=left, inner sep=0pt, text=ink, font=\small] at (4.55,-3.25)
-    {\textbf{Never sent to the searches} your sentence or your budget.\\[2pt]
-     \textbf{Never done} booking or paying. Roameo does neither.};
+  \node[anchor=north west, text width=4.7cm, align=left, inner sep=0pt, text=ink, font=\normalsize] at (5.5,-2.95)
+    {The searches never get your sentence or your budget.\\[2pt]
+     \textbf{Roameo never books or pays for anything.}};
 \end{tikzpicture}
 \end{document}
