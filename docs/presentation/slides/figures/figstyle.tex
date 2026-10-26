@@ -37,21 +37,18 @@
 \newcommand{\markcode}{{\usefont{OT1}{cmss}{bx}{n}\char6}}
 \newcommand{\markyou}{\faUserCheck}
 
-% TikZ's align=left fixes the word space from the node's own font, so text set smaller or larger
-% inside a node gets odd gaps. Use each font's own word space instead.
-\tikzset{every node/.append style={execute at begin node={\spaceskip=0pt\xspaceskip=0pt\relax}}}
 \tikzset{
   >={Stealth[length=2.4mm,width=1.8mm]},
   every picture/.style={line cap=butt, line join=miter},
-  hd/.style={font=\bfseries, text=ink, align=left},
-  sub/.style={text=muted, align=left},
-  panel/.style={fill=umbsoft, draw=none, rounded corners=3pt, inner sep=6pt, align=left, text=ink},
-  card/.style={fill=faint, draw=none, rounded corners=3pt, inner sep=5pt, align=left, text=ink},
-  sys/.style={draw=umb, line width=0.8pt, fill=white, rounded corners=3pt, inner sep=5pt, align=center, text=ink},
-  sysfill/.style={draw=none, fill=umb, rounded corners=3pt, inner sep=5pt, align=center, text=white},
-  code/.style={draw=ink, line width=0.8pt, fill=white, rounded corners=3pt, inner sep=5pt, align=center, text=ink},
-  warm/.style={draw=accent, line width=1pt, fill=accentsoft, rounded corners=3pt, inner sep=5pt, align=left, text=ink},
-  receipt/.style={draw=ok, line width=1pt, fill=oksoft, rounded corners=3pt, inner sep=5pt, align=left, text=ink},
+  hd/.style={font=\bfseries, text=ink, align=flush left},
+  sub/.style={text=muted, align=flush left},
+  panel/.style={fill=umbsoft, draw=none, rounded corners=3pt, inner sep=6pt, align=flush left, text=ink},
+  card/.style={fill=faint, draw=none, rounded corners=3pt, inner sep=5pt, align=flush left, text=ink},
+  sys/.style={draw=umb, line width=0.8pt, fill=white, rounded corners=3pt, inner sep=5pt, align=flush center, text=ink},
+  sysfill/.style={draw=none, fill=umb, rounded corners=3pt, inner sep=5pt, align=flush center, text=white},
+  code/.style={draw=ink, line width=0.8pt, fill=white, rounded corners=3pt, inner sep=5pt, align=flush center, text=ink},
+  warm/.style={draw=accent, line width=1pt, fill=accentsoft, rounded corners=3pt, inner sep=5pt, align=flush left, text=ink},
+  receipt/.style={draw=ok, line width=1pt, fill=oksoft, rounded corners=3pt, inner sep=5pt, align=flush left, text=ink},
   mark/.style={circle, fill=umb, text=white, inner sep=0pt, minimum size=7mm, font=\bfseries},
   link/.style={->, draw=muted, line width=0.7pt},
   syslink/.style={->, draw=umb, line width=1pt},

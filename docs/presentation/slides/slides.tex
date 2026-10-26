@@ -61,10 +61,6 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
 \setbeamercolor{normal text}{fg=ink}
 \setbeamercolor{title}{fg=primary}
 
-% TikZ's align=left fixes the word space from the node's own font, so text set smaller or larger
-% inside a node gets odd gaps. Use each font's own word space instead.
-\tikzset{every node/.append style={execute at begin node={\spaceskip=0pt\xspaceskip=0pt\relax}}}
-
 % The three idea marks, as in the figures.
 \newcommand{\markagents}{\faSearch}
 \newcommand{\markcode}{{\usefont{OT1}{cmss}{bx}{n}\char6}}
@@ -105,27 +101,27 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     % the logo at its native resolution, only scaled down, with its empty margin trimmed
     \node[anchor=north west, inner sep=0pt] at ([xshift=1.5cm, yshift=-0.8cm]current page.north west)
       {\includegraphics[width=4.3cm, trim=118 172 118 172, clip]{Blue-UMB-logo-lockup.png}};
-    \node[anchor=north east, inner sep=0pt, align=right, font=\normalsize, text=muted] at ([xshift=-1.5cm, yshift=-1.05cm]current page.north east)
+    \node[anchor=north east, inner sep=0pt, align=flush right, font=\normalsize, text=muted] at ([xshift=-1.5cm, yshift=-1.05cm]current page.north east)
       {PEAAII AI Applications Hackathon 2026\\Agentic AI, October 2026};
     % the name and the promise
     \node[anchor=north west, inner sep=0pt, font=\fontsize{62}{66}\selectfont\bfseries, text=primary] at ([xshift=1.4cm, yshift=-3.2cm]current page.north west) {Roameo};
-    \node[anchor=north west, inner sep=0pt, font=\LARGE, text=ink, text width=12.6cm, align=left] at ([xshift=1.5cm, yshift=-5.3cm]current page.north west)
+    \node[anchor=north west, inner sep=0pt, font=\LARGE, text=ink, text width=12.6cm, align=flush left] at ([xshift=1.5cm, yshift=-5.3cm]current page.north west)
       {plans your trip and lets you decide on the money};
     % the three ideas, the tagline
-    \node[anchor=north west, inner sep=0pt, text width=12.2cm, align=left, font=\huge] at ([xshift=1.5cm, yshift=-6.7cm]current page.north west)
+    \node[anchor=north west, inner sep=0pt, text width=12.2cm, align=flush left, font=\huge] at ([xshift=1.5cm, yshift=-6.7cm]current page.north west)
       {\makebox[1.15cm][l]{\textcolor{umb}{\markagents}}\textbf{AI agents do the legwork.}\par\vspace{1.5mm}
        \makebox[1.15cm][l]{\textcolor{umb}{\markcode}}\textbf{Code checks the money.}\par\vspace{1.5mm}
        \makebox[1.15cm][l]{\textcolor{umb}{\markyou}}\textbf{You make the call.}\par\vspace{2mm}
        {\large\color{muted}An agent here is an AI helper with one job.}};
     % the authors and their department
-    \node[anchor=south west, inner sep=0pt, text width=13cm, align=left] at ([xshift=1.5cm, yshift=0.75cm]current page.south west)
+    \node[anchor=south west, inner sep=0pt, text width=13cm, align=flush left] at ([xshift=1.5cm, yshift=0.75cm]current page.south west)
       {{\Large\bfseries Zhen Lu \quad Noctis Zhang\par}\vspace{1.2mm}
        {\large Department of Computer Science, University of Massachusetts Boston\par}};
     % two QR codes, try it and the code
     \node[anchor=north, inner sep=0pt] (q1) at ([xshift=-3.9cm, yshift=-2.55cm]current page.north east) {\qrcode[height=3.3cm]{https://roameo-l13h.onrender.com/}};
-    \node[anchor=north, inner sep=0pt, font=\small, align=center] at ([yshift=-0.15cm]q1.south) {\textbf{Try it}\\roameo-l13h.onrender.com};
+    \node[anchor=north, inner sep=0pt, font=\small, align=flush center] at ([yshift=-0.15cm]q1.south) {\textbf{Try it}\\roameo-l13h.onrender.com};
     \node[anchor=north, inner sep=0pt] (q2) at ([xshift=-3.9cm, yshift=-7.05cm]current page.north east) {\qrcode[height=3.3cm]{https://github.com/TinyZhen/Travel_Agent}};
-    \node[anchor=north, inner sep=0pt, font=\small, align=center] at ([yshift=-0.15cm]q2.south) {\textbf{Code}\\github.com/TinyZhen/Travel\_Agent};
+    \node[anchor=north, inner sep=0pt, font=\small, align=flush center] at ([yshift=-0.15cm]q2.south) {\textbf{Code}\\github.com/TinyZhen/Travel\_Agent};
   \end{tikzpicture}
   \note{
     \textbf{(15 s, ends at 0 min 15 s)} Hi, we are Zhen Lu and Noctis Zhang, from computer
@@ -157,7 +153,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
       \vspace{6mm}
       \figcaption{What has to add up, and again after every change}
       \vspace{1.5mm}
-      \begin{tikzpicture}[x=1cm, y=1cm, cost/.style={fill=umbsoft, rounded corners=3pt, minimum width=1.9cm, minimum height=1.6cm, align=center, font=\large, text=ink, inner sep=2pt}, op/.style={font=\Large\bfseries, text=umb}]
+      \begin{tikzpicture}[x=1cm, y=1cm, cost/.style={fill=umbsoft, rounded corners=3pt, minimum width=1.9cm, minimum height=1.6cm, align=flush center, font=\large, text=ink, inner sep=2pt}, op/.style={font=\Large\bfseries, text=umb}]
         \node[cost] at (0.95,0) {\faPlane\\flights};
         \node[op] at (2.15,0) {+};
         \node[cost] at (3.35,0) {\faBed\\hotel};
@@ -296,7 +292,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
       \choice{raise the budget}\hspace{0.8mm}\choice{2 nights}\hspace{0.8mm}\choice{drive}\par
       \vspace{3mm}
       \begin{tikzpicture}[x=1cm, y=1cm]
-        \node[fill=oksoft, rounded corners=3pt, inner sep=6pt, text width=8.0cm, align=left, font=\normalsize, text=ink] {%
+        \node[fill=oksoft, rounded corners=3pt, inner sep=6pt, text width=8.0cm, align=flush left, font=\normalsize, text=ink] {%
           \textbf{\textcolor{ok}{From our tests.}} With Alex's exact sentence, when the budget is raised, the plan is rebuilt, checked again, and fits. Alex says OK and gets a calendar file.};
       \end{tikzpicture}\par
       \vspace{3mm}
@@ -329,7 +325,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     \end{column}
     \begin{column}{0.38\textwidth}
       \begin{tikzpicture}[x=1cm, y=1cm]
-        \node[fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=5.85cm, align=left, font=\small, text=ink] {%
+        \node[fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=5.85cm, align=flush left, font=\small, text=ink] {%
           {\normalsize\bfseries What a test is\par}\vspace{1mm}
           A conversation we wrote in advance, typed into Roameo, with code that checks the answer. It \textbf{passes} when every check comes out right.\par\vspace{1.5mm}
           {\normalsize\bfseries Two ways we ran them\par}\vspace{1mm}
@@ -378,7 +374,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     \begin{column}{0.54\textwidth}
       {\normalsize\bfseries What it cannot do yet\par}
       \vspace{1.2mm}
-      \begin{tikzpicture}[x=1cm, y=1cm, nb/.style={fill=faint, rounded corners=3pt, inner sep=4pt, text width=4.1cm, minimum height=1.05cm, align=left, font=\small, text=ink, anchor=north west}]
+      \begin{tikzpicture}[x=1cm, y=1cm, nb/.style={fill=faint, rounded corners=3pt, inner sep=4pt, text width=4.1cm, minimum height=1.05cm, align=flush left, font=\small, text=ink, anchor=north west}]
         \node[nb] at (0,0) {Demo mode covers 8 cities.};
         \node[nb] at (4.62,0) {Food and local transit are estimates.};
         \node[nb] at (0,-1.2) {AI-written summaries and tips can be wrong or out of date.};
@@ -399,7 +395,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 % 9. COMPETITORS AND TARGET MARKET
 \begin{frame}{Other apps plan or sell trips, Roameo treats your budget as a limit}
-  \begin{tikzpicture}[x=1cm, y=1cm, grp/.style={fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=5.0cm, minimum height=4.1cm, align=left, font=\normalsize, text=ink, anchor=north west}]
+  \begin{tikzpicture}[x=1cm, y=1cm, grp/.style={fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=5.0cm, minimum height=4.1cm, align=flush left, font=\normalsize, text=ink, anchor=north west}]
     \node[grp] at (0,0) {{\large\bfseries Chat assistants\par}\vspace{0.5mm}{\small\color{muted}such as ChatGPT and Gemini\par}\vspace{1.5mm}
       Answer questions on any topic, and can write a trip plan in a chat window.};
     \node[grp] at (5.75,0) {{\large\bfseries Booking site assistants\par}\vspace{0.5mm}{\small\color{muted}such as Expedia's Romie\par}\vspace{1.5mm}
@@ -412,7 +408,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
   \vspace{4.5mm}
   \support{\textbf{Where Roameo differs}\enspace It is not a booking site and not a chat window. It is the planning step in between, where code adds up every price and you decide on the money.}
   \vspace{3mm}
-  \begin{tikzpicture}[x=1cm, y=1cm, who/.style={fill=faint, rounded corners=3pt, inner sep=6pt, text width=3.6cm, minimum height=1.5cm, align=left, font=\normalsize, text=ink, anchor=north west}]
+  \begin{tikzpicture}[x=1cm, y=1cm, who/.style={fill=faint, rounded corners=3pt, inner sep=6pt, text width=3.6cm, minimum height=1.5cm, align=flush left, font=\normalsize, text=ink, anchor=north west}]
     \node[anchor=north west, inner sep=0pt, font=\normalsize\bfseries, text width=1.7cm] at (0,-0.4) {Built for};
     \node[who] at (1.75,0) {students on short trips};
     \node[who] at (6.0,0) {budget travelers};
@@ -436,12 +432,12 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
 \begin{frame}{Anyone can try Roameo free, and a club can share one link}
   \begin{columns}[T, totalwidth=\textwidth]
     \begin{column}{0.65\textwidth}
-      \begin{tikzpicture}[x=1cm, y=1cm, st/.style={fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=10.0cm, minimum height=2.6cm, align=left, font=\normalsize, text=ink, anchor=north west}, ic/.style={font=\LARGE, text=umb, anchor=north west, inner sep=0pt}]
-        \node[st] at (0,0) {\hspace{1.3cm}\parbox[t]{8.6cm}{{\large\bfseries Try it on a laptop\par}\vspace{0.8mm}Demo mode starts in about three minutes, with sample prices for 8 cities and no sign-ups or paid accounts.}};
+      \begin{tikzpicture}[x=1cm, y=1cm, st/.style={fill=umbsoft, rounded corners=3pt, inner sep=6pt, text width=10.0cm, minimum height=2.6cm, align=flush left, font=\normalsize, text=ink, anchor=north west}, ic/.style={font=\LARGE, text=umb, anchor=north west, inner sep=0pt}]
+        \node[st] at (0,0) {\hspace{1.3cm}\parbox[t]{8.6cm}{\raggedright{\large\bfseries Try it on a laptop\par}\vspace{0.8mm}Demo mode starts in about three minutes, with sample prices for 8 cities and no sign-ups or paid accounts.}};
         \node[ic] at (0.3,-0.4) {\faLaptop};
-        \node[st] at (0,-2.85) {\hspace{1.3cm}\parbox[t]{8.6cm}{{\large\bfseries Share one link with a club\par}\vspace{0.8mm}A group of four sees 2 rooms and the cost per person before anyone pays. An optional access code keeps the free searches for the club.}};
+        \node[st] at (0,-2.85) {\hspace{1.3cm}\parbox[t]{8.6cm}{\raggedright{\large\bfseries Share one link with a club\par}\vspace{0.8mm}A group of four sees 2 rooms and the cost per person before anyone pays. An optional access code keeps the free searches for the club.}};
         \node[ic] at (0.3,-3.25) {\faUsers};
-        \node[st] at (0,-5.7) {\hspace{1.3cm}\parbox[t]{8.6cm}{{\large\bfseries Add live prices one service at a time\par}\vspace{0.8mm}About 80 plans a month fit in the free search plan. A class can read the code to see an AI that asks before it spends.}};
+        \node[st] at (0,-5.7) {\hspace{1.3cm}\parbox[t]{8.6cm}{\raggedright{\large\bfseries Add live prices one service at a time\par}\vspace{0.8mm}About 80 plans a month fit in the free search plan. A class can read the code to see an AI that asks before it spends.}};
         \node[ic] at (0.3,-6.1) {\faKey};
       \end{tikzpicture}\par
     \end{column}
@@ -518,7 +514,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     \begin{column}{0.49\textwidth}
       {\normalsize\bfseries The fixed order\par}
       \vspace{2mm}
-      \begin{tikzpicture}[x=1cm, y=1cm, st/.style={fill=umbsoft, rounded corners=3pt, inner sep=5pt, text width=7.2cm, align=left, font=\normalsize, text=ink, anchor=north west}]
+      \begin{tikzpicture}[x=1cm, y=1cm, st/.style={fill=umbsoft, rounded corners=3pt, inner sep=5pt, text width=7.2cm, align=flush left, font=\normalsize, text=ink, anchor=north west}]
         \node[st] at (0,0)     {\textbf{1}\enspace Indoor stops on a bad weather day, first when one is found};
         \node[st] at (0,-1.4)  {\textbf{2}\enspace A cheaper hotel, one level at a time, which can use two fixes};
         \node[st] at (0,-2.8)  {\textbf{3}\enspace The cheapest flight};
@@ -530,7 +526,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     \begin{column}{0.49\textwidth}
       {\normalsize\bfseries What happened in Alex's run\par}
       \vspace{2mm}
-      \begin{tikzpicture}[x=1cm, y=1cm, st/.style={fill=faint, rounded corners=3pt, inner sep=5pt, text width=7.2cm, align=left, font=\normalsize, text=ink, anchor=north west}]
+      \begin{tikzpicture}[x=1cm, y=1cm, st/.style={fill=faint, rounded corners=3pt, inner sep=5pt, text width=7.2cm, align=flush left, font=\normalsize, text=ink, anchor=north west}]
         \node[st] at (0,0)     {First plan \hfill \$1,235};
         \node[st] at (0,-1.15)  {A cheaper hotel \hfill \$984};
         \node[st] at (0,-2.3)  {The cheapest flight \hfill \$984};
