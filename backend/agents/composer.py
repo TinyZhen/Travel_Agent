@@ -262,14 +262,14 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
 
         # ---- evening event decides when the day's sightseeing must end
         todays = [e for e in events if e["date"] == day.isoformat() and e["name"] not in used]
-        # Prefer events that match their interests; any event beats an empty evening otherwise.
-        event = next((e for e in todays if interests & set(e.get("tags", []))), None) or \
-            (todays[0] if todays and not any(interests & set(e.get("tags", [])) for e in events) else None)
-        daytime = event if event and event.get("time") and _hm(event["time"]) < _hm("17:00") else None
-        if daytime:
-            later = [e for e in todays if e["name"] != daytime["name"] and e.get("time") and _hm(e["time"]) >= _hm("17:00")]
-            event = next((e for e in later if interests & set(e.get("tags", []))), None) or \
-                (later[0] if later and not any(interests & set(e.get("tags", [])) for e in events) else None)
+        matches = lambda e: not interests or bool(interests & set(e.get("tags", [])))
+        is_day = lambda e: bool(e.get("time")) and _hm(e["time"]) < _hm("17:00")
+        # A daytime event takes sightseeing time, so it must match their interests.
+        daytime = next((e for e in todays if is_day(e) and matches(e)), None)
+        # Evenings are free anyway: prefer a match, otherwise any event beats an empty evening.
+        evening = [e for e in todays if not is_day(e)]
+        event = next((e for e in evening if matches(e)), None) or \
+            (evening[0] if evening and not any(matches(e) for e in events) else None)
         if event and event.get("time"):
             end = min(end, _hm(event["time"]) - 90)  # leave time for dinner first
 

@@ -365,6 +365,9 @@ def search_events(destination: str, start_date: str, nights: int = 2,
         live = _ticketmaster(c["name"], start, nights)
     if live:
         return live
+    if not offline() and (os.getenv("SERPAPI_API_KEY") or os.getenv("TICKETMASTER_API_KEY")):
+        # Live mode: no real events found. Better no events than made-up ones a traveler might believe.
+        return []
     out = []
     for offset in range(nights + 1):
         day = start + timedelta(days=offset)
