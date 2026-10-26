@@ -104,7 +104,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     \node[anchor=north east, inner sep=0pt, align=flush right, font=\normalsize, text=muted] at ([xshift=-1.5cm, yshift=-1.05cm]current page.north east)
       {PEAAII AI Applications Hackathon 2026\\Agentic AI, October 2026};
     % the name and the promise
-    \node[anchor=north west, inner sep=0pt, font=\fontsize{62}{66}\selectfont\bfseries, text=primary] at ([xshift=1.4cm, yshift=-3.2cm]current page.north west) {Roameo};
+    \node[anchor=north west, inner sep=0pt, font=\fontsize{70}{74}\selectfont\bfseries, text=primary] at ([xshift=1.4cm, yshift=-3.2cm]current page.north west) {Roameo};
     \node[anchor=north west, inner sep=0pt, font=\LARGE, text=ink, text width=12.6cm, align=flush left] at ([xshift=1.5cm, yshift=-5.3cm]current page.north west)
       {plans your trip and lets you decide on the money};
     % the three ideas, the tagline
@@ -167,12 +167,11 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
       \end{tikzpicture}\par
     \end{column}
   \end{columns}
-  \vspace{10mm}
+  \vspace{7mm}
   {\Large\bfseries A chat reply can do the sum itself and say it fits your budget, with nobody checking it.\par}
-  \vspace{3mm}
-  \vspace{1mm}
+  \vspace{5mm}
   {\large 89\% of travelers want AI help to plan a trip, but only 12\% are happy to let AI decide alone [2].\par}
-  \vspace{3mm}
+  \vspace{5mm}
   \figcaption{[2] Booking.com, Global AI Sentiment Report, July 2025. Alex is an illustration. The run on the next slides is real.}
   \note{
     \textbf{(35 s, ends at 0 min 50 s)} Meet Alex, a student we made up for this talk. Alex has
@@ -339,8 +338,8 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
       \makebox[0.6cm][l]{\textcolor{umb}{\markyou}}Nothing counts as approved before OK.\par}
     \end{column}
   \end{columns}
-  \vspace{2.5mm}
-  \support{\textbf{Honest limits.} We wrote the tests ourselves, both modes used sample prices and weather, 3 runs is a small sample, and there was no user study. Only the AI understood ``first weekend of December''.}
+  \vspace{4.5mm}
+  {\large\textbf{Honest limits.} We wrote the tests ourselves, both modes used sample prices and weather, 3 runs is a small sample, and there was no user study. Only the AI understood ``first weekend of December''.\par}
   \note{
     \textbf{(49 s, ends at 4 min 12 s)} Does it work? A test here is a conversation we wrote in
     advance, typed into Roameo, with code that checks the answer. For example, that it asks for
@@ -502,9 +501,9 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
   \includegraphics[width=\textwidth]{fig_workflow.pdf}\par
   \raggedright
   \vspace{2.5mm}
-  \vspace{1mm}
+  \vspace{3.5mm}
   {\large\textbf{Why six helpers and not one big prompt?} Each AI step has a narrow job, and code checks what it returns. Activities come from an allowed list. A trip fact changes only if your own words say so. Searches the plan needs are run even if the AI skipped them, and the researcher stops after 8 steps.\par}
-  \vspace{2.5mm}
+  \vspace{3.5mm}
   {\large\textbf{Why not more?} A separate helper for every search would add hand-offs without adding decisions.\par}
   \note{Backup only. Sources are the six helper files and the coordinator file in backend/agents.}
 \end{frame}
@@ -609,20 +608,20 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
       {\normalsize\bfseries Sources\par}
       \vspace{1.5mm}
       {\normalsize
-      [1] Expedia Group Media Solutions, Path to Purchase research, 2023.\\ {\small\color{muted}expedia.com/newsroom/eg-path-to-purchase-research}\par\vspace{3.6mm}
-      [2] Booking.com, Global AI Sentiment Report, July 2025, through Hospitality Net.\\ {\small\color{muted}hospitalitynet.org/news/4128268.html}\par\vspace{3.6mm}
-      [3] Expedia Group, Spring 2024 product release, which introduced Romie.\\ {\small\color{muted}expedia.com/newsroom/spring-product-release-2024}\par\vspace{3.6mm}
-      [4] Fast.io, Best AI for travel planning 2026, a vendor review and an opinion.\\ {\small\color{muted}fast.io/resources/best-ai-for-travel-planning-2026}\par\vspace{3.6mm}
+      [1] Expedia Group Media Solutions, Path to Purchase research, 2023.\\ {\small\color{muted}expedia.com/newsroom/eg-path-to-purchase-research}\par\vspace{4.6mm}
+      [2] Booking.com, Global AI Sentiment Report, July 2025, through Hospitality Net.\\ {\small\color{muted}hospitalitynet.org/news/4128268.html}\par\vspace{4.6mm}
+      [3] Expedia Group, Spring 2024 product release, which introduced Romie.\\ {\small\color{muted}expedia.com/newsroom/spring-product-release-2024}\par\vspace{4.6mm}
+      [4] Fast.io, Best AI for travel planning 2026, a vendor review and an opinion.\\ {\small\color{muted}fast.io/resources/best-ai-for-travel-planning-2026}\par\vspace{4.6mm}
       \textbf{Numbers} come from the repository, the evaluation results files, README.md, the code under backend/ and docs/screenshots, or from the sources above.\par}
     \end{column}
     \begin{column}{0.49\textwidth}
       {\normalsize\bfseries Thanks\par}
       \vspace{1.5mm}
       {\normalsize
-      To the organizers of the PEAAII AI Applications Hackathon 2026.\par\vspace{3.6mm}
-      \textbf{Data and services}\enspace Google Flights, Google Hotels, Google Events and Google Maps through SerpApi, Ticketmaster Discovery, Open-Meteo, OpenStreetMap and Leaflet.\par\vspace{3.6mm}
-      \textbf{AI model}\enspace Claude Haiku 5.5 by Anthropic, through OpenRouter, in AI mode only.\par\vspace{3.6mm}
-      \textbf{Built with}\enspace FastAPI, React, Vite and Tailwind CSS. Slides on the Elegant template by Lars Spreng (CC BY 4.0). Poster on the Gemini theme by Anish Athalye (MIT License).\par\vspace{3.6mm}
+      To the organizers of the PEAAII AI Applications Hackathon 2026.\par\vspace{4.6mm}
+      \textbf{Data and services}\enspace Google Flights, Google Hotels, Google Events and Google Maps through SerpApi, Ticketmaster Discovery, Open-Meteo, OpenStreetMap and Leaflet.\par\vspace{4.6mm}
+      \textbf{AI model}\enspace Claude Haiku 5.5 by Anthropic, through OpenRouter, in AI mode only.\par\vspace{4.6mm}
+      \textbf{Built with}\enspace FastAPI, React, Vite and Tailwind CSS. Slides on the Elegant template by Lars Spreng (CC BY 4.0). Poster on the Gemini theme by Anish Athalye (MIT License).\par\vspace{4.6mm}
       \textbf{Identity}\enspace The UMass Boston logos and colours show the authors' affiliation. They do not mean the university endorses Roameo.\par}
     \end{column}
   \end{columns}
