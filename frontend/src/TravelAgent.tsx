@@ -1,7 +1,27 @@
 import React, { useEffect, useRef, useState } from "react";
 import TripMap, { DAY_COLORS } from "./AttractionsMap";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+// Dev: separate backend on :8000. Production: the backend serves this page, so same origin.
+const API = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
+
+// Public demo may require an access code (set ROAMEO_ACCESS_CODE on the server).
+const CODE_KEY = "roameo-access-code";
+function accessCode(): string {
+    try { return localStorage.getItem(CODE_KEY) ?? ""; } catch { return ""; }
+}
+function askForCode(): string {
+    const code = window.prompt("This demo needs an access code:") ?? "";
+    try { localStorage.setItem(CODE_KEY, code); } catch { /* private mode: keep for this request only */ }
+    return code;
+}
+async function api(path: string, init: RequestInit = {}, retry = true): Promise<Response> {
+    const res = await fetch(`${API}${path}`, { ...init, headers: { ...(init.headers ?? {}), "X-Access-Code": accessCode() } });
+    if (res.status === 401 && retry) {
+        askForCode();
+        return api(path, init, false);
+    }
+    return res;
+}
 
 type Item = { kind: string; name: string; start?: string; end?: string; hours?: number; cost?: number; price_unknown?: boolean; cost_estimated?: boolean; indoor?: boolean; lat?: number; lng?: number; source?: string; url?: string; why?: string; travel?: { mode: string; minutes: number; km: number } | null };
 type Day = { date: string; weather?: string; rain_chance?: number; items: Item[] };
@@ -50,17 +70,18 @@ export default function TravelAgent() {
         setInput("");
         setBusy(true);
         try {
-            const res = await fetch(`${API}/api/message`, {
+            const res = await api("/api/message", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: text, session_id: state?.status === "error" ? null : state?.session_id }),
             });
+            if (res.status === 429) throw new Error("rate limit reached, try again later");
             if (!res.ok) throw new Error(`${res.status}`);
             const data: State = await res.json();
             setState(data);
             setMsgs((m) => [...m, { role: "agent", text: replyFor(data) }]);
         } catch (e) {
-            setMsgs((m) => [...m, { role: "agent", text: `Couldn't reach the planner (${e}). Is the backend running on ${API}?` }]);
+            setMsgs((m) => [...m, { role: "agent", text: `Couldn't reach the planner (${e}).` }]);
         } finally {
             setBusy(false);
         }
@@ -196,7 +217,7 @@ function PlanView({ state }: { state: State }) {
                         <p className="text-3xl font-bold">{money(plan.total_cost)} <span className="text-base font-normal text-stone-500">estimated total</span></p>
                     </div>
                     {state.status === "approved" ? (
-                        <a href={`${API}/api/export/${state.session_id}.ics`} className="rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white">Download .ics</a>
+                        <a href={`${API}/api/export/${state.session_id}.ics?code=${encodeURIComponent(accessCode())}`} className="rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white">Download .ics</a>
                     ) : (
                         <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">Waiting for your approval</span>
                     )}
@@ -337,7 +358,7 @@ const guideRequests = new Map<string, Promise<Guide>>();
 function loadGuide(sessionId: string, name: string): Promise<Guide> {
     const key = `${sessionId}|${name}`;
     if (!guideRequests.has(key)) {
-        guideRequests.set(key, fetch(`${API}/api/guide?session_id=${sessionId}&name=${encodeURIComponent(name)}`)
+        guideRequests.set(key, api(`/api/guide?session_id=${sessionId}&name=${encodeURIComponent(name)}`)
             .then((r) => r.json())
             .catch(() => ({ error: "Guide unavailable." })));
     }

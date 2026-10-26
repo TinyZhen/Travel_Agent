@@ -49,6 +49,18 @@ roughly 80 plans a month. Weather comes from [Open-Meteo](https://open-meteo.com
 days away, a labelled seasonal estimate is used instead. If a live call fails, that tool falls back to sample data
 and the result carries `source: "demo"`.
 
+## Deploy a public demo (Render, free)
+
+The `Dockerfile` builds the React app and serves it from the FastAPI backend, so the demo is one URL.
+
+1. Push this repo to GitHub.
+2. On [render.com](https://render.com), choose **New → Blueprint** and pick the repo. `render.yaml` sets everything up.
+3. Fill in the secrets when asked: `OPENROUTER_API_KEY`, `SERPAPI_API_KEY`, and `ROAMEO_ACCESS_CODE`
+   (visitors must enter this code, so nobody else can spend your API quota).
+4. Open the URL Render gives you. The free plan sleeps after 15 minutes idle; open it a minute before a demo.
+
+Each visitor is also limited to `ROAMEO_RATE_LIMIT` requests per hour (default 60).
+
 ## How it works
 
 | Agent | Job | LLM mode | Demo mode |

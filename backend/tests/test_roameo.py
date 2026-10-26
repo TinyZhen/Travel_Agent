@@ -80,3 +80,11 @@ def test_guide_never_invents_exhibitions(monkeypatch):
     g = guide.guide_for({"name": "Some Museum", "tags": ["museum"], "hours": 2}, {"start": "10:00", "end": "12:00"},
                         spec, date(2026, 11, 13))
     assert [x["title"] for x in g["exhibitions"]] == ["Real Show"] and g["web_checked"]
+
+
+def test_access_code(monkeypatch):
+    import app as app_module
+    monkeypatch.setattr(app_module, "ACCESS_CODE", "letmein")
+    assert client.post("/api/message", json={"message": "hi"}).status_code == 401
+    ok = client.post("/api/message", json={"message": "hi"}, headers={"X-Access-Code": "letmein"})
+    assert ok.status_code == 200
