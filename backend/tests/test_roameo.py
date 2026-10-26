@@ -37,6 +37,8 @@ def test_unknown_session():
 def test_serpapi_parsing(monkeypatch):
     """Live providers parse SerpApi-shaped responses (no network)."""
     import tools
+    from datetime import date, timedelta
+    SOON = date.today() + timedelta(days=3)  # Google Events only covers the next ~10 days
     fake = {
         "google_flights": {"best_flights": [{"price": 212, "flights": [
             {"airline": "JetBlue", "departure_airport": {"id": "BOS", "time": "2026-11-13 08:05"},
@@ -46,13 +48,14 @@ def test_serpapi_parsing(monkeypatch):
              "overall_rating": 4.3, "gps_coordinates": {"latitude": 40.75, "longitude": -73.99}},
             {"name": "No Price Inn"}]},
         "google_events": {"events_results": [
-            {"title": "Jazz Night", "date": {"start_date": "Nov 13", "when": "Fri, Nov 13, 8 – 10 PM"}, "link": "x"},
+            {"title": "Jazz Night", "date": {"start_date": f"{SOON:%b} {SOON.day}",
+                                             "when": f"{SOON:%a, %b} {SOON.day}, 8 – 10 PM"}, "link": "x"},
             {"title": "Out of range", "date": {"start_date": "Dec 25", "when": "Fri, Dec 25"}}]},
     }
     monkeypatch.setattr(tools, "_serpapi", lambda p: fake[p["engine"]])
     f = tools.search_flights("Boston", "New York", "2026-11-13", 2, 2)
     assert f[0]["source"] == "google_flights" and f[0]["price_per_person"] == 212 and f[0]["departure_time"] == "2026-11-13T08:05"
     h = tools.search_hotels("New York", "2026-11-13", 2)
-    assert [x["name"] for x in h] == ["Hotel A"] and h[0]["tier"] == "mid" and h[0]["total_price"] == 378
-    e = tools.search_events("New York", "2026-11-13", 2)
+    assert [x["name"] for x in h] == ["Hotel A"] and h[0]["tier"] == "budget" and h[0]["total_price"] == 378
+    e = tools.search_events("New York", SOON.isoformat(), 2)
     assert len(e) == 1 and e[0]["time"] == "20:00" and e[0]["price_per_person"] is None and "music" in e[0]["tags"]

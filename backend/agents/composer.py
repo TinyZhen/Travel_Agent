@@ -25,7 +25,8 @@ class Constraints:
         self.max_hotel_tier = "luxury"
         self.cheapest_flight = False
         self.skip_paid_events = False
-        self.free_attractions_only = False
+        self.free_attractions_only = False   # free sights + the 2 paid ones that best match interests
+        self.free_attractions_strict = False  # free sights only
         self.excluded: set[str] = set()
 
 
@@ -73,7 +74,10 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     weather = {w["date"]: w for w in _ok(research.get("get_weather"))}
     attractions = [a for a in _ok(research.get("search_attractions")) if a["name"] not in c.excluded]
     if c.free_attractions_only:
-        attractions = [a for a in attractions if not a.get("cost_per_person")]
+        must_see = [a["name"] for a in attractions if a.get("cost_per_person") and a.get("match", 0) > 0][:2]
+        if c.free_attractions_strict:
+            must_see = []
+        attractions = [a for a in attractions if not a.get("cost_per_person") or a["name"] in must_see]
     events = [e for e in _ok(research.get("search_events")) if e["name"] not in c.excluded]
     if c.skip_paid_events:  # unknown price counts as paid
         events = [e for e in events if e.get("price_per_person") == 0]

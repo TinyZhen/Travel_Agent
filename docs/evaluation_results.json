@@ -140,7 +140,7 @@
    "category": "Human-in-the-loop",
    "title": "Infeasible budget \u2192 escalate, not fake it",
    "expected": "Critic tries cheaper options, then asks the human (raise budget / shorten / drive).",
-   "actual": "status=awaiting_approval; total=$778; revisions=4; asked: The cheapest plan I can build is $778, $478 over your $300 budget. Would you like to raise the budget, shorten to 2 nights, or drive instead of flying?",
+   "actual": "status=awaiting_approval; total=$778; revisions=5; asked: The cheapest plan I can build is $778, $478 over your $300 budget. Would you like to raise the budget, shorten to 2 nights, or drive instead of flying?",
    "checks": [
     [
      "\"4 days\" = 3 nights",
@@ -175,7 +175,7 @@
    "category": "Functional",
    "title": "Driving \u2192 no flight search, driving costs",
    "expected": "Flights tool not called; gas/parking appear in the cost breakdown.",
-   "actual": "status=awaiting_approval; total=$1,111; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,130; revisions=0",
    "checks": [
     [
      "no flight tool",
@@ -429,6 +429,68 @@
    ]
   },
   {
+   "id": "T19",
+   "category": "Human-in-the-loop",
+   "title": "No origin \u2192 asks, never assumes",
+   "expected": "Asks where the traveler is leaving from; the bare answer becomes the origin, not the destination.",
+   "actual": "status=awaiting_approval; total=$860; revisions=1",
+   "checks": [
+    [
+     "asked for origin",
+     true
+    ],
+    [
+     "answer used as origin",
+     true
+    ],
+    [
+     "flight from PHL",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 0.0,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
+   "id": "T20",
+   "category": "Real-world adaptation",
+   "title": "Cutting cost keeps what the traveler loves",
+   "expected": "Critic cuts cost but keeps at least one museum, because museums are the stated interest.",
+   "actual": "status=awaiting_approval; total=$561; revisions=4",
+   "checks": [
+    [
+     "critic had to cut",
+     true
+    ],
+    [
+     "within budget",
+     true
+    ],
+    [
+     "a museum survives",
+     true
+    ]
+   ],
+   "passed": true,
+   "known_limitation": false,
+   "seconds": 0.0,
+   "tools": [
+    "get_weather",
+    "search_attractions",
+    "search_events",
+    "search_flights",
+    "search_hotels"
+   ]
+  },
+  {
    "id": "T17",
    "category": "Known limitation",
    "title": "City outside demo data (Paris)",
@@ -480,6 +542,8 @@
   "T14": 1.0,
   "T15": 1.0,
   "T16": 1.0,
+  "T19": 1.0,
+  "T20": 1.0,
   "T17": 1.0,
   "T18": 0.0
  }

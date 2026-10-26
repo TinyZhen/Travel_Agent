@@ -30,7 +30,7 @@ from agents.composer import Constraints
 from schemas import SessionState, TraceStep
 from tools import resolve_city
 
-MAX_REPAIRS = 4
+MAX_REPAIRS = 5
 APPROVE_RE = re.compile(r"^\s*(approve|approved|looks good|lgtm|confirm|perfect)\b", re.I)
 RESEARCH_FIELDS = {"origin", "destination", "start_date", "nights", "travelers", "transport", "interests"}
 
@@ -124,7 +124,8 @@ class Session:
         s, qs = self.state, []
         if any(i.startswith("over_budget") for i in issues):
             gap = s.plan.total_cost - s.spec.budget_usd
-            opts = ["raise the budget", f"shorten to {max(s.spec.nights - 1, 0)} nights"]
+            n = max(s.spec.nights - 1, 0)
+            opts = ["raise the budget", "make it a day trip" if n == 0 else f"shorten to {n} night{'s' if n > 1 else ''}"]
             if s.spec.transport == "fly":
                 opts.append("drive instead of flying")
             qs.append(f"The cheapest plan I can build is ${s.plan.total_cost:,.0f}, "

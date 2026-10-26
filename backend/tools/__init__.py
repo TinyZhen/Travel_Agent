@@ -151,7 +151,7 @@ def search_hotels(destination: str, checkin: str, nights: int = 2, travelers: in
     c = resolve_city(destination)
     if not c:
         return [{"error": f"Unknown city: {destination}"}]
-    live = _google_hotels(c["name"], checkin, nights, travelers)
+    live = _google_hotels(c, checkin, nights, travelers)
     if live:
         return live
     weekend = _parse_date(checkin).weekday() >= 4
@@ -168,9 +168,9 @@ def search_hotels(destination: str, checkin: str, nights: int = 2, travelers: in
     return sorted(out, key=lambda h: h["nightly_price"])
 
 
-def _google_hotels(city: str, checkin: str, nights: int, travelers: int) -> list[dict]:
+def _google_hotels(c: dict, checkin: str, nights: int, travelers: int) -> list[dict]:
     out_date = (_parse_date(checkin) + timedelta(days=max(nights, 1))).isoformat()
-    res = _serpapi({"engine": "google_hotels", "q": f"hotels in {city}", "check_in_date": checkin,
+    res = _serpapi({"engine": "google_hotels", "q": f"hotels in {c['name']}", "check_in_date": checkin,
                     "check_out_date": out_date, "adults": min(max(travelers, 1), 2)})
     if not res:
         return []
@@ -179,20 +179,20 @@ def _google_hotels(city: str, checkin: str, nights: int, travelers: int) -> list
         nightly = (h.get("rate_per_night") or {}).get("extracted_lowest")
         if not nightly or h.get("type") == "vacation rental":
             continue
-        stars = h.get("extracted_hotel_class") or 0
         gps = h.get("gps_coordinates") or {}
+        if gps and _haversine_km(c, {"lat": gps["latitude"], "lng": gps["longitude"]}) > 12:
+            continue  # Google mixes in suburbs (e.g. New Jersey for "hotels in New York")
         out.append({"name": h.get("name"), "nightly_price": float(nightly), "total_price": float(nightly) * nights,
-                    "rating": h.get("overall_rating"), "stars": stars,
-                    "tier": "luxury" if stars >= 4 else "mid" if stars == 3 else "budget" if stars else None,
+                    "rating": h.get("overall_rating"), "stars": h.get("extracted_hotel_class"),
                     "lat": gps.get("latitude"), "lng": gps.get("longitude"), "url": h.get("link"),
                     "source": "google_hotels"})
     if not out:
         return []
-    # Unknown star class: tier by price third.
+    # Tier by price within this city and date (stars say little about value: a 4-star can be cheap).
     prices = sorted(h["nightly_price"] for h in out)
     lo, hi = prices[len(prices) // 3], prices[2 * len(prices) // 3]
     for h in out:
-        h["tier"] = h["tier"] or ("budget" if h["nightly_price"] <= lo else "mid" if h["nightly_price"] <= hi else "luxury")
+        h["tier"] = "budget" if h["nightly_price"] <= lo else "mid" if h["nightly_price"] <= hi else "luxury"
     return sorted(out, key=lambda h: h["nightly_price"])
 
 
@@ -271,12 +271,21 @@ def _tag_event(title: str) -> list[str]:
 
 
 def _google_events(city: str, start: date, nights: int) -> list[dict]:
-    res = _serpapi({"engine": "google_events", "q": f"Events in {city}"})
-    if not res:
+    # Google Events only surfaces the next ~10 days of events: exact dates in the query return nothing,
+    # date filters and paging are ignored (tested Oct 2026). Later trips fall through to Ticketmaster or samples.
+    if (start - date.today()).days > 10:
         return []
-    days = {start + timedelta(days=i) for i in range(nights + 1)}
-    out = []
-    for e in res.get("events_results", []):
+    res = _serpapi({"engine": "google_events", "q": f"Events in {city}"})
+    return _parse_events((res or {}).get("events_results", []), start,
+                         {start + timedelta(days=i) for i in range(nights + 1)})
+
+
+def _parse_events(raw: list[dict], start: date, days: set) -> list[dict]:
+    out, seen = [], set()
+    for e in raw:
+        if e.get("title") in seen:
+            continue
+        seen.add(e.get("title"))
         when = (e.get("date") or {}).get("start_date", "")  # e.g. "Nov 20"
         m = re.match(r"([A-Za-z]{3})\s+(\d{1,2})", when)
         if not m:

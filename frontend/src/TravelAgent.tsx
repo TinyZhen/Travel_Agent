@@ -17,9 +17,9 @@ type State = {
 type Msg = { role: "user" | "agent"; text: string };
 
 const EXAMPLES = [
-    "Weekend in New York on Nov 13 with my partner, we love museums and jazz, budget $1500",
+    "Weekend in New York on Nov 13 from Boston with my partner, we love museums and jazz, budget $1500",
     "Chicago for 4 days, budget $600",
-    "Day trip in Boston on Nov 7, I like history",
+    "Day trip in Boston on Nov 7, I live in Boston and like history",
 ];
 
 const AGENT_COLORS: Record<string, string> = {

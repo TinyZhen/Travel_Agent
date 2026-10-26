@@ -55,5 +55,8 @@ def next_repair(issues: list[str], c: Constraints, plan: Plan) -> Optional[str]:
         return "drop paid events"
     if not c.free_attractions_only:
         c.free_attractions_only = True
+        return "keep free attractions + top 2 matching your interests"
+    if not c.free_attractions_strict:
+        c.free_attractions_strict = True
         return "keep only free attractions"
     return None

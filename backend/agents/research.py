@@ -7,6 +7,7 @@ guardrail re-runs any essential tool the plan cannot do without.
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 import llm
@@ -42,11 +43,21 @@ def _default_args(name: str, spec: TripSpec) -> dict:
     }[name]
 
 
-def _call(name: str, args: dict, results: dict, log: Callable[[TraceStep], None]) -> str:
+def _execute(name: str, args: dict) -> list:
     try:
-        out = tools.REGISTRY[name](**args)
+        return tools.REGISTRY[name](**args)
     except Exception as e:  # tool bugs must not kill the whole plan
-        out = [{"error": f"{type(e).__name__}: {e}"}]
+        return [{"error": f"{type(e).__name__}: {e}"}]
+
+
+def _call_many(calls: list[tuple[str, dict]], results: dict, log: Callable[[TraceStep], None]) -> list[str]:
+    """Run independent tool calls in parallel (live APIs take seconds each); log in request order."""
+    with ThreadPoolExecutor(max_workers=max(len(calls), 1)) as pool:
+        outs = list(pool.map(lambda c: _execute(*c), calls))
+    return [_record(name, out, results, log) for (name, _), out in zip(calls, outs)]
+
+
+def _record(name: str, out: list, results: dict, log: Callable[[TraceStep], None]) -> str:
     results[name] = out
     errors = [r["error"] for r in out if isinstance(r, dict) and "error" in r]
     src = {r.get("source") for r in out if isinstance(r, dict) and r.get("source")}
@@ -63,11 +74,10 @@ def run(spec: TripSpec, log: Callable[[TraceStep], None]) -> dict:
         except Exception as e:
             log(TraceStep(agent="Research", action="LLM loop failed, using rule policy", detail=str(e)[:160]))
     # Guardrail: make sure every essential tool ran (this is also the whole policy in rule mode).
-    for name in required_tools(spec):
-        if name not in results:
-            if llm.available():
-                log(TraceStep(agent="Research", action="guardrail", detail=f"{name} was skipped but is required"))
-            _call(name, _default_args(name, spec), results, log)
+    missing = [n for n in required_tools(spec) if n not in results]
+    if missing and llm.available():
+        log(TraceStep(agent="Research", action="guardrail", detail=f"required but skipped: {', '.join(missing)}"))
+    _call_many([(n, _default_args(n, spec)) for n in missing], results, log)
     return results
 
 
@@ -82,14 +92,20 @@ def _llm_loop(spec: TripSpec, results: dict, log: Callable[[TraceStep], None]) -
             return
         messages.append({"role": "assistant", "content": msg.content or "",
                          "tool_calls": [c.model_dump() for c in calls]})
+        valid = []
         for c in calls:
-            name = c.function.name
             try:
                 args = json.loads(c.function.arguments or "{}")
             except json.JSONDecodeError:
                 args = {}
-            if name not in tools.REGISTRY:
-                content = json.dumps({"error": f"unknown tool {name}"})
-            else:
-                content = _call(name, {**_default_args(name, spec), **args}, results, log)
-            messages.append({"role": "tool", "tool_call_id": c.id, "content": content})
+            if c.function.name in tools.REGISTRY:
+                valid.append((c, {**_default_args(c.function.name, spec), **args}))
+        contents = dict(zip([c.id for c, _ in valid],
+                            _call_many([(c.function.name, a) for c, a in valid], results, log)))
+        for c in calls:
+            messages.append({"role": "tool", "tool_call_id": c.id,
+                             "content": contents.get(c.id, json.dumps({"error": f"unknown tool {c.function.name}"}))})
+        if all(n in results for n in required_tools(spec)):
+            # Everything the plan needs is in; skip the extra "anything else?" round trip.
+            log(TraceStep(agent="Research", action="finished", detail="all required tools called"))
+            return
