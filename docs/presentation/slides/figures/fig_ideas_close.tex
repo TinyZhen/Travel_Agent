@@ -1,0 +1,23 @@
+% The three main ideas again at the close, each filled with what happened in Alex's run
+% (docs/screenshots/03_over_budget_escalation.png). The ending, the budget raised and the plan
+% fitting, comes from our test that replays Alex's sentence on sample prices (backend/eval).
+\documentclass[border=1pt]{standalone}
+\input{figstyle}
+\begin{document}
+\begin{tikzpicture}[x=1cm, y=1cm, font=\normalsize]
+  \foreach \i/\mk/\name/\pa/\pb/\pc in {
+    0/{\markagents}/{AI agents did the legwork}/{Asked Alex where from and when}/{Compared 8 flights, 18 hotels and 59 events, and looked indoors for the cold}/{Turned plain words like ``make it cheaper'' into changes},
+    1/{\markcode}/{Code checked the money}/{Added \$278 + \$162 + \$340 of estimates = \$780}/{Tried five fixes, from \$1,235 down to \$780}/{Showed the \textcolor{accentink}{\textbf{\$180 gap}} instead of hiding it},
+    2/{\markyou}/{Alex made the call}/{Chose how to close the gap}/{Could read all 25 steps}/{\textcolor{ok}{\textbf{Raised the budget, the plan fit, Alex said OK}} \textcolor{muted}{(from our tests)}}} {
+    \begin{scope}[xshift=\i*5.75cm]
+      \fill[umbsoft, rounded corners=4pt] (0,0) rectangle (5.5,5.25);
+      \node[anchor=north, text=umb, font=\LARGE, inner sep=0pt, minimum width=0.8cm] at (0.72,4.95) {\mk};
+      \node[anchor=north west, text width=4.0cm, font=\large\bfseries, text=ink, inner sep=0pt, align=left] at (1.25,4.98) {\name};
+      \node[anchor=north west, text width=4.85cm, align=left, inner sep=0pt, text=ink, font=\normalsize] at (0.35,3.75) {%
+        \textbf{\textcolor{umb}{a}}\enspace\pa\par\vspace{2.6mm}
+        \textbf{\textcolor{umb}{b}}\enspace\pb\par\vspace{2.6mm}
+        \textbf{\textcolor{umb}{c}}\enspace\pc};
+    \end{scope}
+  }
+\end{tikzpicture}
+\end{document}

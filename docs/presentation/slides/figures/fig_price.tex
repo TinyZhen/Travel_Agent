@@ -1,0 +1,39 @@
+% The plan total after each of the checker's fixes in one live run of the app (Alex's run,
+% docs/screenshots/03_over_budget_escalation.png, the step list): $1,235, then $984, $984, $1,014,
+% $780 and $780 against Alex's $600 budget. Five fixes is the limit (backend/agents/orchestrator.py
+% line 34), so it stopped there and asked. Drawn at 16.8 cm wide so the deck includes it at 1 to 1.
+\documentclass[border=2pt]{standalone}
+\input{figstyle}
+\begin{document}
+\begin{tikzpicture}[font=\small]
+  \begin{axis}[roameo,
+    width=16.5cm, height=7.0cm,
+    ybar, bar width=1.2cm, bar shift=0pt,
+    xmin=0.35, xmax=6.65, ymin=0, ymax=1380,
+    axis x line*=bottom, axis y line*=left,
+    xtick={1,...,6},
+    xticklabels={{first plan}, {cheaper hotel}, {cheapest flight}, {no paid events}, {free sights plus 2 that match}, {indoor stops on the rainy day}},
+    xticklabel style={text width=2.2cm, align=center, font=\small, text=ink, yshift=-1pt},
+    ytick={0,300,600,900,1200},
+    yticklabels={{\$0},{\$300},{\textbf{\color{umb}budget \$600}},{\$900},{\$1,200}},
+    yticklabel style={font=\small, text=muted},
+    ymajorgrids,
+    clip=false,
+  ]
+    % the plan total, in UMB blue
+    \addplot[draw=none, fill=umb] coordinates {(1,1235) (2,984) (3,984) (4,1014) (5,780)};
+    % the part of the last plan above the budget, the gap, in orange
+    \addplot[draw=none, fill=accent, bar shift=0pt] coordinates {(6,780)};
+    \addplot[draw=none, fill=umb, bar shift=0pt] coordinates {(6,600)};
+    % the budget line
+    \draw[draw=umb, line width=1.2pt] (axis cs:0.35,600) -- (axis cs:6.65,600);
+    \node[anchor=south, font=\normalsize\bfseries, text=ink, inner sep=2pt] at (axis cs:1,1235) {\$1,235};
+    \node[anchor=south, font=\normalsize\bfseries, text=ink, inner sep=2pt] at (axis cs:2,984) {\$984};
+    \node[anchor=south, font=\normalsize\bfseries, text=ink, inner sep=2pt] at (axis cs:3,984) {\$984};
+    \node[anchor=south, font=\normalsize\bfseries, text=ink, inner sep=2pt] at (axis cs:4,1014) {\$1,014};
+    \node[anchor=south, font=\normalsize\bfseries, text=ink, inner sep=2pt] at (axis cs:5,780) {\$780};
+    \node[anchor=south, font=\normalsize\bfseries, text=ink, inner sep=2pt] at (axis cs:6,780) {\$780};
+    \node[anchor=west, font=\normalsize\bfseries, text=accentink, align=left, inner sep=3pt] at (axis cs:6.47,690) {\$180\\over};
+  \end{axis}
+\end{tikzpicture}
+\end{document}

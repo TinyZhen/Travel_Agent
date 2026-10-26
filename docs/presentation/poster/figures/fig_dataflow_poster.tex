@@ -1,0 +1,24 @@
+% What goes where, short form of REVISION_PLAN.md section 10 (checked against backend/ and
+% frontend/ by the plan's critic): in AI mode your words go to the AI model through OpenRouter,
+% the searches get the city, dates and airport codes, your browser loads the map from OpenStreetMap,
+% and the calendar file downloads only after you approve. Poster size, about 9.6 by 3.7 in.
+\RequirePackage{fix-cm}
+\documentclass[border=0pt]{standalone}
+\input{../../slides/figures/figstyle}
+\begin{document}
+\begin{tikzpicture}[x=1in, y=1in, font=\fontsize{26}{30}\selectfont,
+  who/.style={align=center, text=ink, inner sep=2pt},
+  dest/.style={panel, text width=4.62in, inner sep=0.1in, minimum height=1.08in, anchor=west},
+]
+  \useasboundingbox (0,0.08) rectangle (9.6,-3.58);
+  \node[who] (you) at (0.6,-1.75) {{\fontsize{54}{56}\selectfont\color{umb}\faLaptop}\\[2pt]\textbf{You}};
+  \node[who] (app) at (2.65,-1.75) {{\fontsize{54}{56}\selectfont\color{umb}\faServer}\\[2pt]\textbf{Roameo}};
+  \node[dest] (ai) at (4.42,-0.5) {\textbf{The AI model} gets what you type, only in AI mode};
+  \node[dest] (se) at (4.42,-1.75) {\textbf{Searches} get the city, dates and airports, not your budget};
+  \node[dest] (map) at (4.42,-3.0) {\textbf{The map} comes from OpenStreetMap to your browser};
+  \draw[syslink, <->] (you.east) -- (app.west);
+  \draw[syslink] (app.east) -- (ai.west);
+  \draw[syslink] (app.east) -- (se.west);
+  \draw[syslink] (you.south) |- (map.west);
+\end{tikzpicture}
+\end{document}
