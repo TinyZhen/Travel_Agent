@@ -165,6 +165,8 @@ def extract(text: str, today: Optional[date] = None, feedback: bool = False) -> 
                 data["start_date"] = date.fromisoformat(data["start_date"])
             data["activities"] = [a for a in data.get("activities") or [] if a in ACTIVITIES]
             data = {k: v for k, v in data.items() if v not in (None, "", [])}
+            if data.get("transport") == "drive" and rule_extract(text, today, feedback).get("transport") != "drive":
+                data.pop("transport")  # a 4-hour city isn't a reason to assume they drive; the plan offers it
             if feedback:
                 # Mid-conversation, the core trip facts only change when the words clearly say so
                 # ("another ski day" must not turn a week into a day trip).
