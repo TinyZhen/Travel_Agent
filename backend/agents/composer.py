@@ -37,6 +37,7 @@ class Constraints:
         self.sticky = 0.6                     # how strongly to keep previous items
         self.demote: set[str] = set()         # previous items we chose to drop to make room
         self.weather_strict = False           # Critic: bad-weather days must avoid outdoor stops
+        self.previous_day: dict[str, int] = {}  # where each stop sat in the plan being revised
 
 
 def _ok(rows) -> list:
@@ -80,7 +81,7 @@ def _hm(t: str) -> int:
 
 
 def _fmt(minutes: float) -> str:
-    minutes = int(round(minutes / 5) * 5)
+    minutes = min(int(round(minutes / 5) * 5), 23 * 60 + 55)
     return f"{minutes // 60:02d}:{minutes % 60:02d}"
 
 
@@ -205,6 +206,72 @@ def _fill_gaps(items: list[dict], cond: Optional[dict] = None) -> list[dict]:
     return out
 
 
+CLUSTER_KM = 3.0  # stops this close belong to the same day (one area, no back-and-forth)
+
+
+def _assign_days(attractions: list[dict], days_n: int, activity_day: dict, c: Constraints,
+                 spec: TripSpec, arrival: Optional[int] = None) -> dict[int, list[str]]:
+    """Group stops into days by area before scheduling: the best remaining stop seeds a day, nearby
+    stops join it. A revision keeps each existing stop on its day; new stops join the nearest one.
+    Each day holds as many hours of sightseeing as it really has (a 22:25 landing has none)."""
+    full_hours = {"relaxed": 4.5, "normal": 6.5, "packed": 8.5}[c.pace]
+
+    def hours_free(i: int) -> float:
+        if days_n > 1 and i == 0:
+            start = (arrival + 90) if arrival is not None else _hm("13:00")
+            h = max(0.0, (_hm(PACE_END[c.pace]) - start) / 60 - 1.5)
+        elif days_n > 1 and i == days_n - 1:
+            h = 4.0
+        else:
+            h = full_hours
+        return h - (activity_day[i].get("hours", 3) if i in activity_day else 0)
+
+    def room(i: int) -> bool:
+        return sum(x.get("hours", 2) + 0.5 for x in pools[i]) < hours_free(i) - 0.5
+    pools: dict[int, list[dict]] = {i: [] for i in range(days_n)}
+    calm = {"bad": False, "cold": False, "label": None}
+    months = {(spec.start_date + timedelta(days=j)).month for j in range(days_n)}
+    todo = [a for a in attractions if a.get("lat") is not None and any(_in_season(a, m) for m in months)]
+    for a in todo:
+        if a["name"] in c.previous_day and c.previous_day[a["name"]] < days_n:
+            pools[c.previous_day[a["name"]]].append(a)
+    rest = sorted((a for a in todo if a["name"] not in c.previous_day), key=lambda a: -_score(a, c, calm))
+
+    def centre(p):
+        return {"lat": sum(x["lat"] for x in p) / len(p), "lng": sum(x["lng"] for x in p) / len(p)}
+    order = [i for i in range(days_n) if not (days_n > 1 and i in (0, days_n - 1))] + \
+            [i for i in range(days_n) if days_n > 1 and i in (0, days_n - 1)]
+    pinned = set(c.previous_day)
+    queue, moved = list(rest), set()
+    while queue:
+        a = queue.pop(0)
+        # Right next to a day that's already full (the sea lions beside the Arch)? Take the place of
+        # that day's stop farthest from its centre, and let that one find another day.
+        link = lambda x, group: min((_haversine_km(x, y) for y in group if y is not x), default=99.0)
+        full_near = sorted((link(a, pools[i]), i) for i in order if pools[i] and not room(i))
+        if full_near and full_near[0][0] <= 1.0 and a["name"] not in moved:
+            i = full_near[0][1]
+            # the day's most isolated stop (farthest from its nearest neighbour) makes way
+            out = max((x for x in pools[i] if x["name"] not in pinned), key=lambda x: link(x, pools[i]), default=None)
+            if out and link(out, pools[i]) > link(a, pools[i]) + 0.3:
+                pools[i].remove(out)
+                pools[i].append(a)
+                moved.update({a["name"], out["name"]})
+                queue.insert(0, out)
+                continue
+        open_days = [i for i in order if room(i)]
+        if not open_days:
+            break
+        near = sorted((_haversine_km(centre(pools[i]), a), i) for i in open_days if pools[i])
+        if near and near[0][0] <= CLUSTER_KM:
+            pools[near[0][1]].append(a)          # same area as a day that's already planned
+        elif empties := [i for i in open_days if not pools[i]]:
+            pools[empties[0]].append(a)          # new area: give it its own day
+        else:
+            pools[near[0][1]].append(a)          # no empty day left: nearest area with room
+    return {i: [a["name"] for a in p] for i, p in pools.items()}
+
+
 def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     plan = Plan()
     travelers = spec.travelers
@@ -251,7 +318,21 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
         if "winter" in options[0].get("tags", []):
             free.sort(key=lambda j: (weather.get((spec.start_date + timedelta(days=j)).isoformat()) or {}).get("high_c", 0))
         activity_day[free[0]] = options[0]
+    arrival = _hm(plan.flight["arrival_time"][11:16]) if plan.flight else None
+    day_pool = _assign_days(attractions, days_n, activity_day, c, spec, arrival)
+    pooled = {n for p in day_pool.values() for n in p}
+    by_name = {a["name"]: a for a in attractions}
+
+    def centre_of(names):
+        pts = [by_name[n] for n in names if by_name.get(n, {}).get("lat") is not None]
+        return {"lat": sum(p["lat"] for p in pts) / len(pts), "lng": sum(p["lng"] for p in pts) / len(pts)} if pts else None
     for i in range(days_n):
+        # Today's area, plus stops no day claimed. A stop an earlier day couldn't fit may move here only
+        # if it's in today's area (or today has no area of its own): no criss-crossing the city.
+        here = centre_of(day_pool[i])
+        spill = {n for j in range(i) for n in day_pool[j] if n not in used and
+                 (here is None or by_name[n].get("lat") is None or _haversine_km(here, by_name[n]) <= CLUSTER_KM)}
+        allowed = set(day_pool[i]) | {a["name"] for a in attractions if a["name"] not in pooled} | spill
         day = spec.start_date + timedelta(days=i)
         w = weather.get(day.isoformat())
         cond = conditions(w)
@@ -317,7 +398,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                     clock, lunch_done = clock + 60, True
                 best, best_val = None, None
                 for a in attractions:
-                    if a["name"] in used or not _in_season(a, day.month):
+                    if a["name"] in used or a["name"] not in allowed or not _in_season(a, day.month):
                         continue
                     leg = _leg(pos, a) or {"minutes": 20}
                     finish = clock + leg["minutes"] + a.get("hours", 2) * 60
@@ -412,7 +493,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                                  "cost": (event.get("price_per_person") or 0) * travelers,
                                  "price_unknown": event.get("price_per_person") is None,
                                  "url": event_link(event, spec.destination), "source": event.get("source")})
-            else:
+            elif max(clock + 30, _hm("19:00")) <= _hm("21:30"):  # a 22:25 landing doesn't get a dinner slot
                 dp.items.append({"kind": "meal", "url": food_link(pos), "name": f"Dinner near {last_sight or base['name']}",
                                  "start": _fmt(max(clock + 30, _hm("19:00"))),
                                  "end": _fmt(max(clock + 30, _hm("19:00")) + 75), "cost": 0})

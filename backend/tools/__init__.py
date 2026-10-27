@@ -262,7 +262,7 @@ PLACE_TAGS = [  # (keyword in Google's place type, tags, indoor, typical cost pe
     ("plaza", ["landmark", "history"], False, 0, 1), ("mission", ["history", "architecture"], True, 0, 1),
     ("boat tour", ["outdoors", "nature"], False, 60, 2.5), ("snorkel", ["outdoors", "nature"], False, 60, 3),
     ("dive", ["outdoors", "nature"], False, 90, 3), ("whale", ["outdoors", "nature"], False, 80, 3),
-    ("tour operator", ["outdoors"], False, 60, 3), ("hiking area", ["hiking", "nature", "outdoors"], False, 0, 2.5),
+    ("hiking area", ["hiking", "nature", "outdoors"], False, 0, 2.5),
     ("nature preserve", ["nature", "outdoors"], False, 0, 2), ("botanical", ["nature"], False, 15, 1.5),
     ("tourist attraction", ["landmark"], False, 0, 1.5),  # last resort: generic but real sights
 ]
@@ -293,7 +293,9 @@ def _google_maps(c: dict, query: str, interests: list[str]) -> list[dict]:
         hit = next((row for row in PLACE_TAGS if re.search(rf"\b{row[0]}", kind)), None)
         if not hit:
             continue  # unknown place type (venue, shop, office…): not a sight we can schedule reliably
-        if any(x in kind for x in NOT_SIGHTS) or (r.get("title") or "").lower() == c["name"].lower():
+        if any(x in kind for x in NOT_SIGHTS) or (r.get("title") or "").lower() == c["name"].lower() \
+                or re.search(r"\bagency\b|tour operator|rental service", kind):
+            # agencies sell trips; they're offered as activities ("whale watching with X"), not as sights
             continue  # roller rinks, escape rooms, event venues, or the city itself: not a sight
         tags = _tags_for(kind)
         out.append({"name": r.get("title"), "lat": gps["latitude"], "lng": gps["longitude"], "tags": tags,

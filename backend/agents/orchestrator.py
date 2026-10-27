@@ -139,10 +139,10 @@ class Session:
         light = [d for d in full_days if sum(it["kind"] in ("attraction", "event") for it in d.items) <= 1]
         if light and not any(i.startswith("over_budget") for i in issues):
             dates = ", ".join(f"{d.date:%a %b %d}" for d in light)
-            extra = f" a second {s.spec.activities[0]} day," if s.spec.activities else ""
+            example = f"\"another {s.spec.activities[0]} day\"" if s.spec.activities else "\"snorkeling\" or \"hiking\""
             qs.append(f"{dates} {'is' if len(light) == 1 else 'are'} light: I've used the best options I found in "
                       f"{s.spec.destination}. Say \"add more activities\" and I'll search wider, name an activity "
-                      f"(e.g.{extra or ' snorkeling, hiking'}), or keep {'it' if len(light) == 1 else 'them'} free.")
+                      f"(e.g. {example}), or keep {'it' if len(light) == 1 else 'them'} free.")
         rough = [d for d in s.plan.days if d.condition in ("freezing", "snowy", "cold")]
         if rough and not qs:
             coldest = min(rough, key=lambda d: d.high_c if d.high_c is not None else 99)
@@ -267,9 +267,13 @@ class Session:
             s.status = "needs_clarification"
             return
         if "destination" in changed:
-            c.previous, c.must_include = set(), set()
+            c.previous, c.must_include, c.previous_day = set(), set(), {}
         else:
             c.previous = set(current)  # revise the current plan instead of starting over
+            c.previous_day = {it["name"]: i for i, d in enumerate(s.plan.days) for it in d.items
+                              if it["kind"] == "attraction" and not it.get("activity")}
+            if ops.get("fill"):
+                c.previous_day = {}  # filling the trip: keep every stop, but regroup days by area
         c.demote = set()
         wanted = ops.get("more", [])
         c.sticky = 5.0 if wanted else 0.6  # "more X": keep what's there, fit X into the gaps first

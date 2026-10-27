@@ -158,3 +158,22 @@ def test_vague_requests_for_more_things_to_do_are_understood():
                 "why only day 2", "these days are empty"]:
         assert rule_parse(msg, []).get("fill"), msg
     assert not rule_parse("make it cheaper", []).get("fill")
+
+
+def test_days_are_grouped_by_area():
+    """Stops in two areas ~10 km apart never share a day (no criss-crossing the city)."""
+    from datetime import date
+    from agents import composer
+    from schemas import TripSpec
+    from tools import _haversine_km
+    west = [{"name": f"West {k}", "lat": 42.36 + k * 0.002, "lng": -71.10, "tags": ["landmark"], "hours": 1.5,
+             "indoor": True, "cost_per_person": 0, "match": 0} for k in range(4)]
+    east = [{"name": f"East {k}", "lat": 42.36 + k * 0.002, "lng": -70.98, "tags": ["landmark"], "hours": 1.5,
+             "indoor": True, "cost_per_person": 0, "match": 0} for k in range(4)]
+    spec = TripSpec(origin="Boston", destination="Boston", start_date=date(2026, 11, 10), nights=3, transport="local")
+    plan = composer.compose(spec, {"search_attractions": [west[0], east[0], west[1], east[1], west[2], east[2],
+                                                           west[3], east[3]]}, composer.Constraints())
+    for d in plan.days:
+        stops = [it for it in d.items if it["kind"] == "attraction"]
+        assert all(_haversine_km(a, b) < 3 for a in stops for b in stops), [s["name"] for s in stops]
+    assert sum(it["kind"] == "attraction" for d in plan.days for it in d.items) == 8
