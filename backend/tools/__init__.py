@@ -13,6 +13,7 @@ import re
 import zlib
 from datetime import date, datetime, timedelta
 from typing import Any, Optional
+from urllib.parse import quote_plus
 from zoneinfo import ZoneInfo
 
 import requests
@@ -67,7 +68,7 @@ def resolve_city(name: str) -> Optional[dict]:
     if not hit or (hit.get("population") or 0) < 10000:
         return None
     city = {"name": hit["name"], "lat": hit["latitude"], "lng": hit["longitude"], "tz": hit.get("timezone"),
-            "region": hit.get("admin1"), "city_code": None, "key": None}
+            "region": hit.get("admin1"), "country": hit.get("country_code"), "city_code": None, "key": None}
     city["iata"] = nearest_airport(city)
     return city
 
@@ -82,12 +83,43 @@ def us_state(name: str) -> Optional[tuple[str, list[str]]]:
     return (name.strip().title(), D.US_STATES[key]) if key in D.US_STATES else None
 
 
-def drive_hours(origin: str, destination: str) -> Optional[float]:
-    """Rough driving time: straight-line distance × 1.25 road factor at 85 km/h."""
+_ROUTES: dict[tuple, dict] = {}
+
+
+def drive_route(origin: str, destination: str) -> Optional[dict]:
+    """Road distance and driving time (OSRM over OpenStreetMap; estimated if that's unavailable),
+    plus whether the drive crosses a border."""
     o, d = resolve_city(origin), resolve_city(destination)
     if not o or not d:
         return None
-    return round(_haversine_km(o, d) * 1.25 / 85, 1)
+    key = (o["name"], d["name"])
+    if key in _ROUTES:
+        return _ROUTES[key]
+    route = None
+    if not offline():
+        try:
+            r = requests.get(f"https://router.project-osrm.org/route/v1/driving/{o['lng']},{o['lat']};{d['lng']},{d['lat']}",
+                             params={"overview": "false"}, timeout=TIMEOUT).json()
+            leg = r["routes"][0]
+            # The public OSRM demo assumes slow road speeds: its times run ~20% over what drivers see
+            # (Boston-New York 4.7h vs ~3.8h, Boston-Chicago 18.8h vs ~14.5h), so calibrate.
+            route = {"km": round(leg["distance"] / 1000), "hours": round(leg["duration"] / 3600 * 0.8, 1),
+                     "source": "osrm"}
+        except (requests.RequestException, KeyError, IndexError, ValueError):
+            pass
+    if not route:  # straight line x 1.2 for roads, highway speeds on long drives
+        km = _haversine_km(o, d) * 1.2
+        route = {"km": round(km), "hours": round(km / (105 if km > 300 else 75), 1), "source": "estimate"}
+    route["border"] = bool(o.get("country") and d.get("country") and o["country"] != d["country"])
+    route["url"] = ("https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="
+                    + quote_plus(o["name"]) + "&destination=" + quote_plus(d["name"]))
+    _ROUTES[key] = route
+    return route
+
+
+def drive_hours(origin: str, destination: str) -> Optional[float]:
+    route = drive_route(origin, destination)
+    return route["hours"] if route else None
 
 
 # --------------------------------------------------------------------- SerpApi

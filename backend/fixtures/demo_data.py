@@ -5,14 +5,14 @@ are illustrative samples and are labelled `"source": "demo"` everywhere.
 """
 
 CITIES = {
-    "new york": {"name": "New York", "iata": "JFK", "city_code": "NYC", "lat": 40.7128, "lng": -74.0060, "tz": "America/New_York"},
-    "chicago": {"name": "Chicago", "iata": "ORD", "city_code": "CHI", "lat": 41.8781, "lng": -87.6298, "tz": "America/Chicago"},
-    "washington": {"name": "Washington DC", "iata": "DCA", "city_code": "WAS", "lat": 38.9072, "lng": -77.0369, "tz": "America/New_York"},
-    "montreal": {"name": "Montreal", "iata": "YUL", "city_code": "YMQ", "lat": 45.5019, "lng": -73.5674, "tz": "America/Toronto"},
-    "san francisco": {"name": "San Francisco", "iata": "SFO", "city_code": "SFO", "lat": 37.7749, "lng": -122.4194, "tz": "America/Los_Angeles"},
-    "boston": {"name": "Boston", "iata": "BOS", "city_code": "BOS", "lat": 42.3601, "lng": -71.0589, "tz": "America/New_York"},
-    "detroit": {"name": "Detroit", "iata": "DTW", "city_code": "DTT", "lat": 42.3314, "lng": -83.0458, "tz": "America/Detroit"},
-    "philadelphia": {"name": "Philadelphia", "iata": "PHL", "city_code": "PHL", "lat": 39.9526, "lng": -75.1652, "tz": "America/New_York"},
+    "new york": {"name": "New York", "iata": "JFK", "city_code": "NYC", "lat": 40.7128, "lng": -74.0060, "tz": "America/New_York", "country": "US"},
+    "chicago": {"name": "Chicago", "iata": "ORD", "city_code": "CHI", "lat": 41.8781, "lng": -87.6298, "tz": "America/Chicago", "country": "US"},
+    "washington": {"name": "Washington DC", "iata": "DCA", "city_code": "WAS", "lat": 38.9072, "lng": -77.0369, "tz": "America/New_York", "country": "US"},
+    "montreal": {"name": "Montreal", "iata": "YUL", "city_code": "YMQ", "lat": 45.5019, "lng": -73.5674, "tz": "America/Toronto", "country": "CA"},
+    "san francisco": {"name": "San Francisco", "iata": "SFO", "city_code": "SFO", "lat": 37.7749, "lng": -122.4194, "tz": "America/Los_Angeles", "country": "US"},
+    "boston": {"name": "Boston", "iata": "BOS", "city_code": "BOS", "lat": 42.3601, "lng": -71.0589, "tz": "America/New_York", "country": "US"},
+    "detroit": {"name": "Detroit", "iata": "DTW", "city_code": "DTT", "lat": 42.3314, "lng": -83.0458, "tz": "America/Detroit", "country": "US"},
+    "philadelphia": {"name": "Philadelphia", "iata": "PHL", "city_code": "PHL", "lat": 39.9526, "lng": -75.1652, "tz": "America/New_York", "country": "US"},
 }
 
 CITY_ALIASES = {

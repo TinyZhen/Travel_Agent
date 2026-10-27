@@ -143,6 +143,11 @@ class Session:
             qs.append(f"{dates} {'is' if len(light) == 1 else 'are'} light: I've used the best options I found in "
                       f"{s.spec.destination}. Say \"add more activities\" and I'll search wider, name an activity "
                       f"(e.g. {example}), or keep {'it' if len(light) == 1 else 'them'} free.")
+        road = tools.drive_route(s.spec.origin, s.spec.destination) if s.spec.transport == "drive" else None
+        if road and road["hours"] > 9:
+            qs.append(f"Driving {s.spec.origin} → {s.spec.destination} is about {road['hours']:.0f} hours "
+                      f"({road['km']} km) each way, so your first and last days are on the road. "
+                      "Keep driving, or say \"I'll fly\" and I'll price flights instead?")
         rough = [d for d in s.plan.days if d.condition in ("freezing", "snowy", "cold")]
         if rough and not qs:
             coldest = min(rough, key=lambda d: d.high_c if d.high_c is not None else 99)
@@ -249,8 +254,10 @@ class Session:
         if "interests" in fields:
             fields["interests"] = sorted(set(s.spec.interests) | set(fields["interests"]))
         fields.pop("activities", None)  # handled above as edit operations (keeps "another ski day")
-        if re.search(r"\bi'?ll drive\b|\bdrive instead\b", message.lower()):
+        if re.search(r"\bi'?ll drive\b|\bdrive instead\b|\bwe'?ll drive\b", message.lower()):
             fields["transport"] = "drive"
+        elif re.search(r"\b(i'?ll|we'?ll|let'?s) fly\b|\bfly instead\b|\b(take a|by) (plane|flight)\b", message.lower()):
+            fields["transport"] = "fly"
         self.provided |= fields.keys()
         s.spec = intake.apply_defaults(intake.merge(s.spec, fields), self.provided)
         changed = {k for k in fields if before.get(k) != s.spec.model_dump().get(k)}

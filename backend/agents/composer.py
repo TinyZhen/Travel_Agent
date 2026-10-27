@@ -12,7 +12,7 @@ from typing import Optional
 
 import llm
 from schemas import DayPlan, Plan, TraceStep, TripSpec
-from tools import _haversine_km, drive_hours, resolve_city
+from tools import _haversine_km, drive_route, resolve_city
 
 FOOD_PER_DAY = {"budget": 45, "mid": 70, "luxury": 120, "any": 70}
 LOCAL_TRANSIT_PER_DAY = 15
@@ -50,11 +50,12 @@ def pick_flight(flights: list, c: Constraints) -> Optional[dict]:
         return None
     if c.cheapest_flight:
         return min(flights, key=lambda f: f["price_per_person"])
-    # Prefer daytime departures within 25% of the cheapest fare.
+    # Prefer daytime departures that land the same day by 21:00, within 35% of the cheapest fare.
     cheapest = min(f["price_per_person"] for f in flights)
-    good = [f for f in flights if f["price_per_person"] <= cheapest * 1.25
-            and 8 <= int(f["departure_time"][11:13]) <= 18]
-    return min(good or flights, key=lambda f: f["price_per_person"])
+    same_day = lambda f: f["arrival_time"][:10] == f["departure_time"][:10] and f["arrival_time"][11:16] <= "21:00"
+    good = [f for f in flights if f["price_per_person"] <= cheapest * 1.35 and same_day(f)
+            and 7 <= int(f["departure_time"][11:13]) <= 18]
+    return min(good or [f for f in flights if same_day(f)] or flights, key=lambda f: f["price_per_person"])
 
 
 def pick_hotel(hotels: list, spec: TripSpec, c: Constraints) -> Optional[dict]:
@@ -68,6 +69,14 @@ def pick_hotel(hotels: list, spec: TripSpec, c: Constraints) -> Optional[dict]:
     same = [h for h in allowed if h.get("tier") == pref]
     pool = same or allowed
     return max(pool, key=lambda h: (h.get("rating") or 0, -h["nightly_price"]))
+
+
+GAS_PER_KM, TOLLS_PER_KM = 0.075, 0.02
+
+
+def _dur(minutes: float) -> str:
+    h, m = divmod(int(round(minutes / 5) * 5), 60)
+    return f"~{h}h{m:02d}" if m else f"~{h}h"
 
 
 CAR_ACTIVITIES = {"skiing", "hiking", "snow tubing", "kayaking", "beach", "golf"}  # tours usually pick you up
@@ -299,6 +308,10 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     city = resolve_city(spec.destination) or {}
     base = plan.hotel if plan.hotel and plan.hotel.get("lat") is not None else \
         {"name": "city centre", "lat": city.get("lat"), "lng": city.get("lng")}
+    road = (drive_route(spec.origin, spec.destination) or {"km": 300, "hours": 4}) if spec.transport == "drive" else {}
+    # rest stop every ~2.5 h, plus time at the border
+    drive_minutes = (road["hours"] * 60 + 15 * int(road["hours"] // 2.5) + (30 if road.get("border") else 0)) if road else 0
+    drive_home_at = max(_hm("07:00"), min(_hm("15:00"), _hm("21:00") - drive_minutes)) if road else None
     used: set[str] = set()
     seen: dict[str, int] = {}  # place categories already in the trip (ice rink, zoo, market…)
     # Activities the traveler asked for get a day of their own choosing: a full day if possible
@@ -345,24 +358,36 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
         # ---- arrival / departure logistics
         if i == 0 and plan.flight:
             arr = _hm(plan.flight["arrival_time"][11:16])
-            dp.items.append({"kind": "arrival", "name": f"Land at {plan.flight['to']} ({plan.flight['airline']})",
-                             "start": _fmt(arr), "end": _fmt(arr)})
-            clock = arr + 60
+            overnight = plan.flight["arrival_time"][:10] > plan.flight["departure_time"][:10]
+            dp.items.append({"kind": "arrival", "name": f"Land at {plan.flight['to']} ({plan.flight['airline']})"
+                             + (f", {plan.flight['arrival_time'][11:16]} the next morning" if overnight else ""),
+                             "start": _fmt(arr) if not overnight else "23:55", "end": _fmt(arr) if not overnight else "23:55"})
+            clock = arr + 60 if not overnight else 24 * 60  # a red-eye leaves no time on day 1
         elif i == 0 and spec.transport == "drive":
-            hours = drive_hours(spec.origin, spec.destination) or 4
-            dp.items.append({"kind": "arrival", "name": f"Drive from {spec.origin} (~{hours:.0f}h)",
-                             "start": "08:00", "end": _fmt(480 + hours * 60)})
-            clock = 480 + hours * 60 + 15
+            leave = _hm("07:00") if road["hours"] > 6 else _hm("08:00")
+            arrive_at = leave + drive_minutes
+            dp.items.append({"kind": "arrival", "url": road.get("url"),
+                             "name": f"Drive from {spec.origin} ({_dur(drive_minutes)}, {road['km']} km"
+                                     + (", border crossing" if road.get("border") else "") + ")",
+                             "start": _fmt(leave), "end": _fmt(arrive_at)})
+            clock = arrive_at + 15
         if i == 0 and plan.hotel:
             dp.items.append({"kind": "hotel", "name": f"Drop bags at {plan.hotel['name']}",
                              "start": _fmt(clock), "end": _fmt(clock + 30), "lat": base.get("lat"),
                              "lng": base.get("lng"), "travel": None})
             clock += 30
         if i == days_n - 1 and spec.nights > 0:
-            dp.items.append({"kind": "hotel", "name": "Check out, leave bags at the front desk",
+            if drive_home_at is not None:
+                clock = min(clock, drive_home_at - 15)  # an early start home means an early check-out
+            dp.items.append({"kind": "hotel", "name": "Check out, leave bags at the front desk"
+                             if drive_home_at is None or drive_home_at > _hm("10:00") else "Check out",
                              "start": _fmt(clock), "end": _fmt(clock + 15), "lat": base.get("lat"), "lng": base.get("lng")})
             clock += 15
-            end = min(end, _hm("15:00") if spec.transport != "local" else end)
+            if spec.transport == "drive":
+                # leave in time to be home by 21:00; a long drive takes the whole day
+                end = min(end, drive_home_at - 15)
+            elif spec.transport != "local":
+                end = min(end, _hm("15:00"))
 
         # ---- evening event decides when the day's sightseeing must end
         todays = [e for e in events if e["date"] == day.isoformat() and e["name"] not in used]
@@ -457,6 +482,8 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
             if not lunch_done and arrive < _hm("12:30") < clock:
                 lunch_done = True
                 dp.items[-1]["why"] += "; lunch there"
+        if daytime and (clock > _hm(daytime["time"]) or _hm(daytime["time"]) + 120 > end):
+            daytime = None  # can't make it, or it runs past when you have to leave
         if daytime and clock <= _hm(daytime["time"]):
             ev = _hm(daytime["time"])
             fill(ev - 30)  # sights before the event, leaving time to get there
@@ -469,7 +496,7 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
                              "url": event_link(daytime, spec.destination), "source": daytime.get("source")})
             clock = max(clock, ev) + 120
         fill(end)
-        if not lunch_done and clock > _hm("12:00") and clock < _hm("16:00"):
+        if not lunch_done and _hm("12:00") < clock < min(_hm("16:00"), end):
             dp.items.append({"kind": "meal", "url": food_link(pos), "name": f"Lunch near {last_sight or base['name']}",
                              "start": _fmt(clock), "end": _fmt(clock + 60), "cost": 0})
             clock += 60
@@ -479,13 +506,18 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
             dp.items.append({"kind": "departure", "name": f"Head to the airport for your flight home",
                              "start": _fmt(max(clock, _hm("15:00"))), "end": _fmt(max(clock, _hm("15:00")) + 60)})
         elif i == days_n - 1 and spec.transport == "drive" and spec.nights > 0:
-            dp.items.append({"kind": "departure", "name": f"Drive back to {spec.origin}",
-                             "start": _fmt(max(clock, _hm("15:00"))), "end": _fmt(max(clock, _hm("15:00")) + 60)})
+            leave = max(clock, drive_home_at)
+            dp.items.append({"kind": "departure", "url": road.get("url"),
+                             "name": f"Drive back to {spec.origin} ({_dur(drive_minutes)})",
+                             "start": _fmt(leave), "end": _fmt(min(leave + drive_minutes, 23 * 60 + 55))})
         else:
+            if event and event.get("time") and _hm(event["time"]) < clock + 30:
+                event = None  # starts before you've even arrived
             if event and event.get("time"):
                 ev = _hm(event["time"])
-                dp.items.append({"kind": "meal", "url": food_link(pos), "name": f"Dinner near {last_sight or base['name']}",
-                                 "start": _fmt(ev - 90), "end": _fmt(ev - 20), "cost": 0})
+                if ev - 90 >= clock:
+                    dp.items.append({"kind": "meal", "url": food_link(pos), "name": f"Dinner near {last_sight or base['name']}",
+                                     "start": _fmt(ev - 90), "end": _fmt(ev - 20), "cost": 0})
                 used.add(event["name"])
                 dp.items.append({"kind": "event", "name": event["name"], "start": event["time"],
                                  "end": _fmt(ev + 120), "why": "Evening event matching your interests"
@@ -505,9 +537,9 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     if plan.flight:
         cb["flights"] = plan.flight["price_per_person"] * travelers
     if spec.transport == "drive":
-        hours = drive_hours(spec.origin, spec.destination) or 4
-        cb["gas_and_tolls"] = round(hours * 60 * 2 * 0.18 + 20)
-        cb["parking"] = 35 * spec.nights
+        # round trip: ~$0.075/km for gas (30 mpg at ~$3.50/gal) + ~$0.02/km tolls, estimated
+        cb["gas_and_tolls_estimate"] = round(road["km"] * 2 * (GAS_PER_KM + TOLLS_PER_KM))
+        cb["parking_estimate"] = 35 * spec.nights
     if plan.hotel:
         cb["hotel"] = plan.hotel["nightly_price"] * spec.nights * rooms
     cb["activities"] = sum(it.get("cost", 0) for d in plan.days for it in d.items)

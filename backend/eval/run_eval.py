@@ -77,7 +77,7 @@ CASES: list[dict] = [
          turns=["Road trip from Boston to Montreal on Nov 14 for 2 nights, I'll drive"],
          expected="Flights tool not called; gas/parking appear in the cost breakdown.",
          checks=[("no flight tool", lambda s, _: "search_flights" not in tools_called(s)),
-                 ("gas & parking costed", lambda s, _: {"gas_and_tolls", "parking"} <= s.plan.cost_breakdown.keys())]),
+                 ("gas & parking costed", lambda s, _: {"gas_and_tolls_estimate", "parking_estimate"} <= s.plan.cost_breakdown.keys())]),
     dict(id="T8", category="Functional", title="Local day trip → no flight or hotel",
          turns=["Day trip in Boston on Nov 7, I live in Boston and like history"],
          expected="Treated as local: no flight, no hotel; the first sight matches the history interest.",

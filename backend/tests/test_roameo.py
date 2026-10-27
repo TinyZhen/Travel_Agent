@@ -177,3 +177,26 @@ def test_days_are_grouped_by_area():
         stops = [it for it in d.items if it["kind"] == "attraction"]
         assert all(_haversine_km(a, b) < 3 for a in stops for b in stops), [s["name"] for s in stops]
     assert sum(it["kind"] == "attraction" for d in plan.days for it in d.items) == 8
+
+
+def test_long_drive_asks_and_keeps_travel_days_clear():
+    from datetime import date
+    from agents.orchestrator import new_session
+    s = new_session(date(2026, 10, 26))
+    st = s.handle("drive from Boston to Chicago on Nov 20 for 4 nights")
+    assert any("I'll fly" in q for q in st.questions)
+    first, last = st.plan.days[0], st.plan.days[-1]
+    drive_in = next(it for it in first.items if it["kind"] == "arrival")
+    # nothing happens on day 1 before you arrive, and nothing but the drive home on the last day
+    assert all(it["start"] >= drive_in["end"] for it in first.items if it["kind"] in ("attraction", "event", "meal"))
+    assert not [it for it in last.items if it["kind"] in ("attraction", "event")]
+    st = s.handle("I'll fly")
+    assert st.spec.transport == "fly" and st.plan.flight
+
+
+def test_border_crossing_note():
+    from datetime import date
+    from agents.orchestrator import new_session
+    st = new_session(date(2026, 10, 26)).handle("road trip from Boston to Montreal on Nov 20 for 3 nights")
+    assert any("passports" in n for n in st.spec.assumptions)
+    assert "gas_and_tolls_estimate" in st.plan.cost_breakdown

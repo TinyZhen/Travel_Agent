@@ -234,5 +234,9 @@ def apply_defaults(spec: TripSpec, provided: set[str]) -> TripSpec:
     if spec.transport == "fly" and hours is not None and hours <= 4.5 and "transport" not in provided:
         notes.append(f"{spec.destination} is about a {hours:.0f}h drive from {spec.origin}. "
                      "Still pricing flights; say \"I'll drive\" to switch.")
+    o, d = resolve_city(spec.origin or ""), resolve_city(spec.destination or "")
+    if o and d and o.get("country") and d.get("country") and o["country"] != d["country"]:
+        notes.append("Crossing a border: bring passports and allow ~30 min at the crossing."
+                     if spec.transport == "drive" else "International trip: check passports and entry requirements.")
     spec.assumptions = notes
     return spec
