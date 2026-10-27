@@ -169,9 +169,11 @@ def extract(text: str, today: Optional[date] = None, feedback: bool = False) -> 
                 # Mid-conversation, the core trip facts only change when the words clearly say so
                 # ("another ski day" must not turn a week into a day trip).
                 evidence = rule_extract(text, today, feedback=True)
-                for k in ("nights", "start_date", "travelers", "budget_usd", "origin", "destination"):
+                for k in ("nights", "start_date", "travelers", "budget_usd", "origin", "destination", "interests"):
                     if k in data and k not in evidence:
                         data.pop(k)
+                if "interests" in data:  # only the interests the words actually name
+                    data["interests"] = [i for i in data["interests"] if i in evidence["interests"]]
             return data, "llm"
         except Exception:
             pass

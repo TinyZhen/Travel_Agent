@@ -25,7 +25,8 @@ DOCS = pathlib.Path(__file__).resolve().parents[2] / "docs"
 
 
 def tools_called(st) -> set[str]:
-    return {t.action.removeprefix("call ") for t in st.trace if t.action.startswith("call ")}
+    # 'call search_attractions "top sights"' is still the search_attractions tool
+    return {t.action.removeprefix("call ").split(" ")[0] for t in st.trace if t.action.startswith("call ")}
 
 
 def items(st) -> list[dict]:
