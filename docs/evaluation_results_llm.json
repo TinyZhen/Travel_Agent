@@ -7,7 +7,7 @@
    "category": "Functional / E2E",
    "title": "Complete request \u2192 priced plan",
    "expected": "Plan for 2 travelers, Nov 13\u201315, all 5 tools used, total \u2264 $1500, no questions.",
-   "actual": "status=awaiting_approval; total=$1,340; revisions=1",
+   "actual": "status=awaiting_approval; total=$1,220; revisions=1",
    "checks": [
     [
      "status awaiting approval",
@@ -36,7 +36,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.14,
+   "seconds": 5.25,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -67,7 +67,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.26,
+   "seconds": 5.46,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -94,7 +94,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 0.96,
+   "seconds": 1.02,
    "tools": []
   },
   {
@@ -115,7 +115,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 0.92,
+   "seconds": 0.94,
    "tools": []
   },
   {
@@ -132,7 +132,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 0.86,
+   "seconds": 1.05,
    "tools": []
   },
   {
@@ -161,7 +161,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.56,
+   "seconds": 4.51,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -175,7 +175,7 @@
    "category": "Functional",
    "title": "Driving \u2192 no flight search, driving costs",
    "expected": "Flights tool not called; gas/parking appear in the cost breakdown.",
-   "actual": "status=awaiting_approval; total=$1,151; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,096; revisions=0",
    "checks": [
     [
      "no flight tool",
@@ -188,7 +188,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.33,
+   "seconds": 4.54,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -218,7 +218,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 3.79,
+   "seconds": 4.55,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -230,7 +230,7 @@
    "category": "Real-world adaptation",
    "title": "Rainy day \u2192 indoor activities first",
    "expected": "On days with \u226560% rain the first activity is indoors.",
-   "actual": "status=awaiting_approval; total=$1,143; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,116; revisions=0",
    "checks": [
     [
      "rain rule respected",
@@ -239,7 +239,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.04,
+   "seconds": 5.13,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -253,7 +253,7 @@
    "category": "Human-in-the-loop",
    "title": "Feedback: \"cheaper\" really lowers price",
    "expected": "Second plan total is strictly lower than the first.",
-   "actual": "status=awaiting_approval; total=$718; revisions=1",
+   "actual": "status=awaiting_approval; total=$658; revisions=1",
    "checks": [
     [
      "price dropped",
@@ -262,7 +262,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.76,
+   "seconds": 9.24,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -276,7 +276,7 @@
    "category": "Human-in-the-loop",
    "title": "Feedback: \"different hotel\"",
    "expected": "Hotel changes; the rejected one is not re-proposed.",
-   "actual": "status=awaiting_approval; total=$999; revisions=0",
+   "actual": "status=awaiting_approval; total=$939; revisions=0",
    "checks": [
     [
      "hotel changed",
@@ -285,7 +285,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.03,
+   "seconds": 8.7,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -299,7 +299,7 @@
    "category": "Human-in-the-loop",
    "title": "Feedback: skip a specific place",
    "expected": "The Ferry Building is removed from the itinerary.",
-   "actual": "status=awaiting_approval; total=$1,989; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,992; revisions=0",
    "checks": [
     [
      "Ferry Building was in first plan",
@@ -312,7 +312,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.07,
+   "seconds": 8.82,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -326,7 +326,7 @@
    "category": "Safety / oversight",
    "title": "Nothing exported before approval",
    "expected": "Status only becomes approved after explicit human approval.",
-   "actual": "status=approved; total=$1,125; revisions=0",
+   "actual": "status=approved; total=$1,045; revisions=0",
    "checks": [
     [
      "awaiting before approval",
@@ -339,7 +339,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 6.14,
+   "seconds": 6.04,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -366,7 +366,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.78,
+   "seconds": 4.67,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -380,7 +380,7 @@
    "category": "Failure handling",
    "title": "Vague feedback \u2192 asks instead of guessing",
    "expected": "No change to the plan; agent explains what it can change.",
-   "actual": "status=awaiting_approval; total=$1,080; revisions=0; asked: I wasn't sure what to change. Try e.g. \"more museums\", \"slower pace\", \"skip Central Park\", \"cheaper\", \"budget is $900\", or \"approve\".",
+   "actual": "status=awaiting_approval; total=$1,020; revisions=0; asked: I wasn't sure what to change. Try e.g. \"more museums\", \"slower pace\", \"skip Central Park\", \"cheaper\", \"budget is $900\", or \"approve\".",
    "checks": [
     [
      "plan unchanged",
@@ -393,7 +393,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 7.18,
+   "seconds": 7.2,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -420,7 +420,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.35,
+   "seconds": 8.61,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -434,7 +434,7 @@
    "category": "Human-in-the-loop",
    "title": "No origin \u2192 asks, never assumes",
    "expected": "Asks where the traveler is leaving from; the bare answer becomes the origin, not the destination.",
-   "actual": "status=awaiting_approval; total=$875; revisions=1",
+   "actual": "status=awaiting_approval; total=$845; revisions=1",
    "checks": [
     [
      "asked for origin",
@@ -451,7 +451,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.98,
+   "seconds": 5.84,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -482,7 +482,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.93,
+   "seconds": 4.78,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -496,7 +496,7 @@
    "category": "Human-in-the-loop",
    "title": "\"More museums\" revises, doesn't restart",
    "expected": "If a museum can be added, it is (keeping most of the plan, changes reported); if every known museum is already in, the agent says so and leaves the plan unchanged.",
-   "actual": "status=awaiting_approval; total=$1,008; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,069; revisions=0",
    "checks": [
     [
      "museum added, or honest 'no more' with plan unchanged",
@@ -509,7 +509,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 12.56,
+   "seconds": 12.65,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -532,7 +532,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.75,
+   "seconds": 8.8,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -546,7 +546,7 @@
    "category": "Failure handling",
    "title": "A state is not a city \u2192 asks which city",
    "expected": "Asks which city in Michigan (suggesting Detroit, Ann Arbor, Grand Rapids), then plans Detroit.",
-   "actual": "status=awaiting_approval; total=$949; revisions=0; asked: Heads-up: expect cold weather (around high 2\u00b0C / low -6\u00b0C, 50% chance of precipitation, sunset 17:02). I put indoor stops first and kept outdoor time short. Pack warm layers.",
+   "actual": "status=awaiting_approval; total=$986; revisions=0; asked: Heads-up: expect cold weather (around high 2\u00b0C / low -6\u00b0C, 50% chance of precipitation, sunset 17:02). I put indoor stops first and kept outdoor time short. Pack warm layers.",
    "checks": [
     [
      "asked which city",
@@ -559,7 +559,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.62,
+   "seconds": 5.48,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -573,7 +573,7 @@
    "category": "Real-world adaptation",
    "title": "Winter trip \u2192 indoor first, little outdoor time",
    "expected": "Cold days get at most one ordinary outdoor stop; the traveler is warned about the cold.",
-   "actual": "status=awaiting_approval; total=$1,444; revisions=0; asked: Heads-up: expect cold weather (around high 2\u00b0C / low -6\u00b0C, 50% chance of precipitation, sunset 17:02). I put indoor stops first and kept outdoor time short. Pack warm layers.",
+   "actual": "status=awaiting_approval; total=$1,454; revisions=0; asked: Heads-up: expect cold weather (around high 2\u00b0C / low -6\u00b0C, 50% chance of precipitation, sunset 17:02). I put indoor stops first and kept outdoor time short. Pack warm layers.",
    "checks": [
     [
      "days marked cold",
@@ -590,7 +590,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.56,
+   "seconds": 4.95,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -604,7 +604,7 @@
    "category": "Real-world adaptation",
    "title": "Seasonal closures respected",
    "expected": "The river cruise (April\u2013November only) is not scheduled in January.",
-   "actual": "status=awaiting_approval; total=$1,323; revisions=0; asked: Heads-up: expect cold weather (around high 1\u00b0C / low -7\u00b0C, 50% chance of precipitation, sunset 16:44). I put indoor stops first and kept outdoor time short. Pack warm layers.",
+   "actual": "status=needs_clarification; asked: Jan 15, 2026 is in the past. What date did you mean?",
    "checks": [
     [
      "no river cruise",
@@ -613,14 +613,8 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.23,
-   "tools": [
-    "get_weather",
-    "search_attractions",
-    "search_events",
-    "search_flights",
-    "search_hotels"
-   ]
+   "seconds": 0.92,
+   "tools": []
   },
   {
    "id": "T17",
@@ -636,7 +630,7 @@
    ],
    "passed": true,
    "known_limitation": true,
-   "seconds": 0.88,
+   "seconds": 0.92,
    "tools": []
   },
   {
@@ -644,7 +638,7 @@
    "category": "Known limitation",
    "title": "Complex date phrase",
    "expected": "Rule parser can't resolve the phrase \u2192 asks for a date (LLM mode should resolve it to Dec 4).",
-   "actual": "status=awaiting_approval; total=$1,169; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,109; revisions=0",
    "checks": [
     [
      "resolved to Dec 4",
@@ -653,7 +647,7 @@
    ],
    "passed": true,
    "known_limitation": true,
-   "seconds": 4.81,
+   "seconds": 4.82,
    "tools": [
     "get_weather",
     "search_attractions",
