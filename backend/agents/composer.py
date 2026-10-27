@@ -69,7 +69,7 @@ def pick_hotel(hotels: list, spec: TripSpec, c: Constraints) -> Optional[dict]:
     return max(pool, key=lambda h: (h.get("rating") or 0, -h["nightly_price"]))
 
 
-CAR_ACTIVITIES = {"skiing", "hiking", "snow tubing", "kayaking", "beach", "golf"}
+CAR_ACTIVITIES = {"skiing", "hiking", "snow tubing", "kayaking", "beach", "golf"}  # tours usually pick you up
 PACE_END = {"relaxed": "17:00", "normal": "18:30", "packed": "20:00"}
 PACE_START = {"relaxed": "10:00", "normal": "09:30", "packed": "08:30"}
 
@@ -157,7 +157,7 @@ def _describe(w: Optional[dict]) -> Optional[str]:
     return s
 
 
-CATEGORY_CAP = {"museum": 3, "park": 2, "garden": 2}
+CATEGORY_CAP = {"museum": 3, "park": 2, "garden": 2, "beach": 3, "tourist attraction": 4, "tour operator": 2}
 
 
 def _over_cap(a: dict, spec: TripSpec, seen: dict[str, int]) -> bool:
@@ -238,7 +238,10 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
     # (skiing: the coldest one), and the best-rated nearby place.
     activity_day: dict[int, dict] = {}
     for act in spec.activities:  # an activity can appear twice: "another ski day"
-        options = [a for a in research.get(f"activity:{act}") or [] if a["name"] not in c.excluded]
+        taken = {a["name"] for a in activity_day.values() if a.get("activity") != act}
+        # different activities go to different places (one operator may offer both snorkeling and whales)
+        options = [a for a in research.get(f"activity:{act}") or [] if a["name"] not in c.excluded
+                   and a["name"] not in taken]
         if not options:
             continue
         full = [j for j in range(days_n) if days_n == 1 or 0 < j < days_n - 1] or list(range(days_n))
@@ -299,6 +302,10 @@ def compose(spec: TripSpec, research: dict, c: Constraints) -> Plan:
         # Relaxed pace: at most 2 activities on a full day (events count), 1 on travel days.
         n_events = int(bool(event)) + int(bool(daytime))
         cap = None if c.pace != "relaxed" else max(0, (1 if i in (0, days_n - 1) and days_n > 1 else 2) - n_events)
+        if c.pace != "packed" and days_n > 2:
+            # Few places for a long trip: spread them out instead of cramming the first days.
+            spread = max(2, math.ceil(len(attractions) / (days_n - 1)))
+            cap = spread if cap is None else min(cap, spread)
         slack = 30 if c.pace == "relaxed" else 0
 
         def fill(limit: int) -> None:

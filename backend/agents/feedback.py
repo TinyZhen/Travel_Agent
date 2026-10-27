@@ -18,6 +18,8 @@ SYNONYMS.update({"parks": "nature", "landmarks": "landmark", "sights": "landmark
 
 SYSTEM = """You are the Feedback agent of a travel planner. The traveler is reacting to a proposed plan.
 Return JSON with these keys (omit ones that don't apply):
+fill (bool: they want MORE THINGS TO DO in general, e.g. "add some activities", "these days are empty",
+"why is there nothing on day 3"),
 approve (bool), cheaper (bool: ONLY if they ask to reduce cost, e.g. "cheaper", "too expensive";
 stating or raising a budget such as "budget is $1400" is NOT cheaper), different_hotel (bool), different_flight (bool), upgrade_hotel (bool),
 more (list of tags they want MORE of; only the kinds they actually named, e.g. "more museums" -> ["museum"]),
@@ -39,6 +41,9 @@ def rule_parse(message: str, plan_names: list[str]) -> dict:
     t, ops = message.lower(), {}
     if re.match(r"^\s*(approve|approved|looks good|lgtm|confirm|perfect)\b", t):
         ops["approve"] = True
+    if re.search(r"\b(add|more|fill|need|want)\b[^.]*\b(activit|things to do|stuff|something|anything)", t) or \
+            re.search(r"\b(empty|nothing|blank|only day)\b", t):
+        ops["fill"] = True
     if re.search(r"\b(cheaper|too expensive|save money|lower cost)\b", t):
         ops["cheaper"] = True
     if re.search(r"\b(different|another|other|change the) hotel\b|don'?t like the hotel", t):
@@ -77,7 +82,7 @@ def parse(message: str, plan_names: list[str]) -> tuple[dict, str]:
                                            activities=", ".join(ACTIVITIES)), message)
     except Exception:
         return ops, "rules"
-    for k in ("approve", "cheaper", "different_hotel", "different_flight", "upgrade_hotel"):
+    for k in ("fill", "approve", "cheaper", "different_hotel", "different_flight", "upgrade_hotel"):
         if data.get(k) is True:
             ops[k] = True
     for k in ("more", "less"):

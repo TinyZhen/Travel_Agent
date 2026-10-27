@@ -140,8 +140,9 @@ class Session:
         if light and not any(i.startswith("over_budget") for i in issues):
             dates = ", ".join(f"{d.date:%a %b %d}" for d in light)
             extra = f" a second {s.spec.activities[0]} day," if s.spec.activities else ""
-            qs.append(f"{dates} {'is' if len(light) == 1 else 'are'} light: I've used the best options in "
-                      f"{s.spec.destination}. Want{extra} a day trip nearby, or keep {'it' if len(light) == 1 else 'them'} free?")
+            qs.append(f"{dates} {'is' if len(light) == 1 else 'are'} light: I've used the best options I found in "
+                      f"{s.spec.destination}. Say \"add more activities\" and I'll search wider, name an activity "
+                      f"(e.g.{extra or ' snorkeling, hiking'}), or keep {'it' if len(light) == 1 else 'them'} free.")
         rough = [d for d in s.plan.days if d.condition in ("freezing", "snowy", "cold")]
         if rough and not qs:
             coldest = min(rough, key=lambda d: d.high_c if d.high_c is not None else 99)
@@ -184,6 +185,14 @@ class Session:
                 c.excluded.add(hit)
                 c.must_include.discard(hit)
                 moves.append(f"remove {hit}")
+        if ops.get("fill"):
+            found = research.widen(s.spec, s.research, self.log, want=len(_candidates(s.research)) + 8)
+            if c.pace == "relaxed":
+                c.pace = "normal"
+            moves.append(f"fill empty time ({found} more places found)")
+            if not found:
+                notes.append(f"I've searched widely and used what I found in {s.spec.destination}. "
+                              "Name an activity (e.g. \"snorkeling\", \"whale watching\", \"hiking\") and I'll look for it.")
         if ops.get("pace") and ops["pace"] != c.pace:
             c.pace = ops["pace"]
             moves.append(f"pace → {c.pace}")

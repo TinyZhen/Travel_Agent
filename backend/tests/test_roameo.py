@@ -150,3 +150,11 @@ def test_another_activity_day_keeps_the_trip(monkeypatch):
     assert st.spec.nights == nights == 6
     assert sum(it.get("activity") == "skiing" for d in st.plan.days for it in d.items) == 2
     assert len([it for d in st.plan.days for it in d.items if it["kind"] == "event"]) == before
+
+
+def test_vague_requests_for_more_things_to_do_are_understood():
+    from agents.feedback import rule_parse
+    for msg in ["add some activity", "day 3 - 6 you dont have any thing for me, add some activity",
+                "why only day 2", "these days are empty"]:
+        assert rule_parse(msg, []).get("fill"), msg
+    assert not rule_parse("make it cheaper", []).get("fill")

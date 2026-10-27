@@ -254,6 +254,17 @@ PLACE_TAGS = [  # (keyword in Google's place type, tags, indoor, typical cost pe
     ("church", ["architecture", "history"], True, 0, 1), ("cathedral", ["architecture", "history"], True, 0, 1),
     ("bridge", ["landmark", "outdoors"], False, 0, 1), ("theater", ["art", "music"], True, 0, 1),
     ("library", ["architecture", "history"], True, 0, 1), ("landmark", ["landmark"], False, 0, 1),
+    # coast, nature and tours (beach destinations have few museums)
+    ("beach", ["beach", "outdoors", "nature"], False, 0, 2), ("marina", ["landmark", "food"], False, 0, 1.5),
+    ("boardwalk", ["outdoors", "food"], False, 0, 1.5), ("pier", ["landmark", "outdoors"], False, 0, 1),
+    ("scenic", ["landmark", "outdoors"], False, 0, 1), ("viewpoint", ["landmark", "outdoors"], False, 0, 1),
+    ("lookout", ["landmark", "outdoors"], False, 0, 1), ("lighthouse", ["landmark", "history"], False, 0, 1),
+    ("plaza", ["landmark", "history"], False, 0, 1), ("mission", ["history", "architecture"], True, 0, 1),
+    ("boat tour", ["outdoors", "nature"], False, 60, 2.5), ("snorkel", ["outdoors", "nature"], False, 60, 3),
+    ("dive", ["outdoors", "nature"], False, 90, 3), ("whale", ["outdoors", "nature"], False, 80, 3),
+    ("tour operator", ["outdoors"], False, 60, 3), ("hiking area", ["hiking", "nature", "outdoors"], False, 0, 2.5),
+    ("nature preserve", ["nature", "outdoors"], False, 0, 2), ("botanical", ["nature"], False, 15, 1.5),
+    ("tourist attraction", ["landmark"], False, 0, 1.5),  # last resort: generic but real sights
 ]
 
 
@@ -282,8 +293,8 @@ def _google_maps(c: dict, query: str, interests: list[str]) -> list[dict]:
         hit = next((row for row in PLACE_TAGS if re.search(rf"\b{row[0]}", kind)), None)
         if not hit:
             continue  # unknown place type (venue, shop, office…): not a sight we can schedule reliably
-        if any(x in kind for x in NOT_SIGHTS):
-            continue  # roller rinks, escape rooms, event venues: not what "sights" means
+        if any(x in kind for x in NOT_SIGHTS) or (r.get("title") or "").lower() == c["name"].lower():
+            continue  # roller rinks, escape rooms, event venues, or the city itself: not a sight
         tags = _tags_for(kind)
         out.append({"name": r.get("title"), "lat": gps["latitude"], "lng": gps["longitude"], "tags": tags,
                     "category": hit[0],
@@ -320,6 +331,8 @@ ACTIVITY_TYPES = {
     "skiing": ["ski"], "hiking": ["trail", "hiking", "state park", "nature preserve", "national park"],
     "ice skating": ["ice skating", "ice rink", "skating rink"], "kayaking": ["kayak", "canoe", "boat rental"],
     "beach": ["beach"], "golf": ["golf"], "spa": ["spa"], "snow tubing": ["tubing", "ski", "snow"],
+    "snorkeling": ["snorkel", "dive", "diving", "tour operator", "boat tour"],
+    "whale watching": ["whale", "tour operator", "boat tour"],
 }
 
 

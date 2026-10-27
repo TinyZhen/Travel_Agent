@@ -31,7 +31,7 @@ start_date (YYYY-MM-DD or null; resolve relative dates like "next weekend" from 
 on the Friday; copy explicit dates exactly as written even if they are in the past, because the system validates them),
 nights (int; "N days" means N-1 nights, "a weekend" means 2 nights), travelers (int), budget_usd (number or null, total for the whole party),
 interests (list from: museum, art, history, food, nature, music, family, nightlife, science, shopping, architecture, outdoors, comedy),
-activities (specific things they want to DO, list from: skiing, hiking, ice skating, kayaking, beach, golf, spa, snow tubing),
+activities (specific things they want to DO, list from: {activities}),
 transport ("fly", "drive" or "local"), hotel_preference ("budget","mid","luxury","any").
 Only include keys the text actually supports; omit the rest. Do not invent a destination or date."""
 
@@ -160,7 +160,7 @@ def extract(text: str, today: Optional[date] = None, feedback: bool = False) -> 
     today = today or date.today()
     if llm.available():
         try:
-            data = llm.chat_json(SYSTEM.format(today=today.isoformat()), text)
+            data = llm.chat_json(SYSTEM.format(today=today.isoformat(), activities=", ".join(ACTIVITIES)), text)
             if data.get("start_date"):
                 data["start_date"] = date.fromisoformat(data["start_date"])
             data["activities"] = [a for a in data.get("activities") or [] if a in ACTIVITIES]

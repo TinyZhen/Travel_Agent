@@ -95,7 +95,28 @@ def run(spec: TripSpec, log: Callable[[TraceStep], None]) -> dict:
     for act in spec.activities:
         search_activity(spec, results, act, log)
     _seasonal_extras(spec, results, log)
+    widen(spec, results, log)
     return results
+
+
+BROAD_QUERIES = ["things to do", "beaches", "tours and excursions", "parks and viewpoints", "historic sites"]
+
+
+def widen(spec: TripSpec, results: dict, log: Callable[[TraceStep], None], want: int = 0) -> int:
+    """Not enough places to fill the trip (beach towns have few 'top sights')? Search wider.
+    Returns how many new places were found."""
+    want = want or 2 * (spec.nights + 1)
+    done = set(results.setdefault("_queries", []))
+    found = 0
+    for q in BROAD_QUERIES:
+        have = len([a for a in results.get("search_attractions") or [] if isinstance(a, dict) and "name" in a])
+        if have >= want:
+            break
+        if q in done:
+            continue
+        results["_queries"].append(q)
+        found += len(search_more(spec, results, q, log, limit=8))
+    return found
 
 
 def search_activity(spec: TripSpec, results: dict, activity: str, log: Callable[[TraceStep], None]) -> list[dict]:

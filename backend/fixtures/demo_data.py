@@ -159,6 +159,21 @@ AIRPORTS = [
     ("ANC", 61.17, -149.99), ("ASE", 39.22, -106.87), ("EGE", 39.64, -106.92), ("JAC", 43.61, -110.74),
     ("YUL", 45.47, -73.74), ("YYZ", 43.68, -79.63), ("YVR", 49.19, -123.18), ("YOW", 45.32, -75.67),
     ("YQB", 46.79, -71.39), ("YYC", 51.13, -114.01),
+    # international leisure destinations
+    ("SJD", 23.15, -109.72), ("CUN", 21.04, -86.87), ("PVR", 20.68, -105.25), ("MEX", 19.44, -99.07),
+    ("GDL", 20.52, -103.31), ("MZT", 23.16, -106.27), ("OAX", 16.999, -96.73), ("SJU", 18.44, -66.00),
+    ("NAS", 25.04, -77.47), ("MBJ", 18.50, -77.91), ("PUJ", 18.57, -68.36), ("AUA", 12.50, -70.02),
+    ("SXM", 18.04, -63.11), ("BGI", 13.07, -59.49), ("STT", 18.34, -64.97), ("LIR", 10.59, -85.54),
+    ("SJO", 9.99, -84.21), ("BZE", 17.54, -88.31), ("HAV", 22.99, -82.41), ("BDA", 32.36, -64.68),
+    ("LHR", 51.47, -0.45), ("CDG", 49.01, 2.55), ("FCO", 41.80, 12.25), ("BCN", 41.30, 2.08),
+    ("MAD", 40.47, -3.56), ("LIS", 38.77, -9.13), ("AMS", 52.31, 4.76), ("DUB", 53.43, -6.25),
+    ("FRA", 50.04, 8.56), ("MUC", 48.35, 11.79), ("ZRH", 47.46, 8.55), ("VIE", 48.11, 16.57),
+    ("ATH", 37.94, 23.94), ("IST", 41.26, 28.74), ("CPH", 55.62, 12.65), ("KEF", 63.99, -22.62),
+    ("NRT", 35.77, 140.39), ("HND", 35.55, 139.78), ("KIX", 34.43, 135.24), ("ICN", 37.46, 126.44),
+    ("PEK", 40.08, 116.58), ("PVG", 31.14, 121.81), ("HKG", 22.31, 113.92), ("TPE", 25.08, 121.23),
+    ("BKK", 13.69, 100.75), ("SIN", 1.36, 103.99), ("DPS", -8.75, 115.17), ("SYD", -33.95, 151.18),
+    ("GRU", -23.43, -46.47), ("GIG", -22.81, -43.25), ("EZE", -34.82, -58.54), ("LIM", -12.02, -77.11),
+    ("CUZ", -13.54, -71.94), ("BOG", 4.70, -74.15), ("CTG", 10.44, -75.51),
 ]
 
 # Specific activities a traveler can ask for: Google Maps query, search radius (km),
@@ -172,6 +187,8 @@ ACTIVITIES = {
     "golf": ("golf courses", 40, 70, 4, ["outdoors"]),
     "spa": ("day spas", 20, 120, 2.5, ["spa"]),
     "snow tubing": ("snow tubing", 120, 30, 2.5, ["winter", "outdoors", "family"]),
+    "snorkeling": ("snorkeling tours", 40, 60, 3, ["outdoors", "nature"]),
+    "whale watching": ("whale watching tours", 40, 80, 3, ["outdoors", "nature"]),
 }
 ACTIVITY_WORDS = {
     "skiing": ["ski", "skiing", "snowboard", "snowboarding", "slopes"],
@@ -182,4 +199,6 @@ ACTIVITY_WORDS = {
     "golf": ["golf", "golfing"],
     "spa": ["spa"],
     "snow tubing": ["snow tubing", "tubing", "sledding"],
+    "snorkeling": ["snorkel", "snorkeling", "scuba", "diving"],
+    "whale watching": ["whale", "whales", "whale watching"],
 }
