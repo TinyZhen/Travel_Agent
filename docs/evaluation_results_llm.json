@@ -36,7 +36,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.14,
+   "seconds": 5.23,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -67,7 +67,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.62,
+   "seconds": 5.59,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -94,7 +94,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 1.05,
+   "seconds": 1.0,
    "tools": []
   },
   {
@@ -132,7 +132,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 0.83,
+   "seconds": 0.88,
    "tools": []
   },
   {
@@ -161,7 +161,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.59,
+   "seconds": 4.57,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -188,7 +188,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.4,
+   "seconds": 4.11,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -218,7 +218,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.29,
+   "seconds": 4.12,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -239,7 +239,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.7,
+   "seconds": 4.31,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -262,7 +262,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.11,
+   "seconds": 9.17,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -285,7 +285,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.41,
+   "seconds": 8.58,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -312,7 +312,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.43,
+   "seconds": 8.38,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -339,7 +339,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.99,
+   "seconds": 5.88,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -366,7 +366,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.13,
+   "seconds": 4.89,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -393,7 +393,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 6.81,
+   "seconds": 7.28,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -420,7 +420,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 7.91,
+   "seconds": 7.77,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -451,7 +451,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.33,
+   "seconds": 5.54,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -482,7 +482,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.57,
+   "seconds": 4.92,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -496,7 +496,7 @@
    "category": "Human-in-the-loop",
    "title": "\"More museums\" revises, doesn't restart",
    "expected": "If a museum can be added, it is (keeping most of the plan, changes reported); if every known museum is already in, the agent says so and leaves the plan unchanged.",
-   "actual": "status=awaiting_approval; total=$1,036; revisions=0",
+   "actual": "status=awaiting_approval; total=$1,069; revisions=0",
    "checks": [
     [
      "museum added, or honest 'no more' with plan unchanged",
@@ -509,7 +509,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 13.55,
+   "seconds": 11.46,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -532,7 +532,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 8.21,
+   "seconds": 8.09,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -559,7 +559,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 5.41,
+   "seconds": 5.64,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -590,7 +590,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.77,
+   "seconds": 4.85,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -613,7 +613,7 @@
    ],
    "passed": true,
    "known_limitation": false,
-   "seconds": 4.88,
+   "seconds": 4.6,
    "tools": [
     "get_weather",
     "search_attractions",
@@ -653,7 +653,7 @@
    ],
    "passed": true,
    "known_limitation": true,
-   "seconds": 4.85,
+   "seconds": 4.55,
    "tools": [
     "get_weather",
     "search_attractions",
