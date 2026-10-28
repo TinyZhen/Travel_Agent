@@ -560,8 +560,8 @@ def main() -> int:
     cp = doc.core_properties
     cp.title = T.DOC_TITLE
     cp.subject = T.DOC_SUBJECT
-    cp.author = "Zhen Lu, Noctis Zhang"
-    cp.last_modified_by = "Zhen Lu, Noctis Zhang"
+    cp.author = "Zhen Lu, Noctis Zhang, Zhen Luo"
+    cp.last_modified_by = "Zhen Lu, Noctis Zhang, Zhen Luo"
     cp.keywords = "Roameo, agentic AI, trip planning"
     cp.comments = ""
     cp.revision = (cp.revision or 0) + 1

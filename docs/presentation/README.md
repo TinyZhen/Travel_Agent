@@ -1,6 +1,6 @@
 # Roameo presentation materials
 
-The seven minute slide deck, the one slide poster with its two minute pitch, and the builder of the project report, for Roameo by Zhen Lu and Noctis Zhang, Department of Computer Science, University of Massachusetts Boston. PEAAII AI Applications Hackathon 2026, Agentic AI, October 2026.
+The seven minute slide deck, the one slide poster with its two minute pitch, and the builder of the project report, for Roameo by Zhen Lu and Noctis Zhang, Department of Computer Science, University of Massachusetts Boston, and Zhen Luo, Department of Industrial Engineering, Northeastern University. PEAAII AI Applications Hackathon 2026, Agentic AI, October 2026.
 
 All three tell one story. Alex, a student we made up, types "Chicago for 4 days, budget $600" into one real live run of the app. Three ideas carry the story, each in three parts.
 

@@ -5,11 +5,11 @@ Speakers are Zhen Lu (slides 1 to 5) and Noctis Zhang (slides 6 to 11). The team
 > Lines that start with this sign are cues for the speaker and are not spoken. The notes tool in the tools folder copies the spoken text into the slide notes.
 
 ## Slide 1. Roameo plans your trip and lets you decide on the money
-_about 15 seconds_
+_about 19 seconds_
 
 > Zhen Lu speaks.
 
-Hi, we are Zhen Lu and Noctis Zhang, from computer science at UMass Boston. This is Roameo, a trip planner. AI agents do the legwork, code checks the money, and you make the call.
+Hi, we are Zhen Lu and Noctis Zhang, from computer science at UMass Boston, with Zhen Luo from industrial engineering at Northeastern. This is Roameo, a trip planner. AI agents do the legwork, code checks the money, and you make the call.
 
 ## Slide 2. Alex has $600 for four days in Chicago and types one sentence
 _about 35 seconds_

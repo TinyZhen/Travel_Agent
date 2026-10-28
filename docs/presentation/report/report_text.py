@@ -25,7 +25,9 @@ TITLE = {
         ("An agent here is an AI helper with one job.", 11, False, "grey", 40),
         ("Team Roameo", 12, True, "ink", 2),
         ("Zhen Lu and Noctis Zhang", 12, False, "ink", 2),
-        ("Department of Computer Science, University of Massachusetts Boston", 11, False, "grey", 28),
+        ("Department of Computer Science, University of Massachusetts Boston", 11, False, "grey", 10),
+        ("Zhen Luo", 12, False, "ink", 2),
+        ("Department of Industrial Engineering, Northeastern University", 11, False, "grey", 28),
         (f"Try it at [roameo-l13h.onrender.com]({DEMO})", 11, False, "ink", 2),
         (f"Code at [github.com/TinyZhen/Travel_Agent]({CODE})", 11, False, "ink", 2),
         ("October 2026", 11, False, "ink", 0),
@@ -92,8 +94,10 @@ BLOCKS = [
         widths=[1.6, 2.4, 2.5],
         header=["Name", "Major and department", "Main contribution"],
         rows=[["Zhen Lu", "Computer Science, UMass Boston", "Agent framework and backend"],
-              ["Noctis Zhang", "Computer Science, UMass Boston", "Market research"]],
-        caption="Team Roameo, Department of Computer Science, University of Massachusetts Boston.")),
+              ["Noctis Zhang", "Computer Science, UMass Boston", "Market research"],
+              ["Zhen Luo", "Industrial Engineering, Northeastern University", "Co-author"]],
+        caption="Team Roameo, from the Department of Computer Science, University of Massachusetts Boston, "
+                "and the Department of Industrial Engineering, Northeastern University.")),
     ("h2", "1.3 Problem statement"),
     ("p", f"**Question 1, what problem do we solve?** Planning even a short trip is a scattered chore. In "
           f"Expedia{A}s 2023 Path to Purchase study, travelers spent about 303 minutes with travel content "

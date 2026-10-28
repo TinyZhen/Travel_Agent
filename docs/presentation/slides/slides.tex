@@ -5,7 +5,8 @@
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 % Roameo plans your trip and lets you decide on the money. Seven-minute presentation (420 s at
 % most, eleven timed slides, then six backup slides). Authors Zhen Lu and Noctis Zhang, Department
-% of Computer Science, University of Massachusetts Boston.
+% of Computer Science, University of Massachusetts Boston, and Zhen Luo, Department of Industrial
+% Engineering, Northeastern University.
 %
 % The story follows ../REVISION_PLAN.md. One use case (Alex, a student we made up, on one real
 % live run of the app, docs/screenshots/03_over_budget_escalation.png) carries three main ideas,
@@ -21,7 +22,7 @@
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 \documentclass[
-t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhang},pdftitle={Roameo plans your trip and lets you decide on the money},pdfsubject={Seven minute project presentation}}
+t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu, Noctis Zhang and Zhen Luo},pdftitle={Roameo plans your trip and lets you decide on the money},pdfsubject={Seven minute project presentation}}
 ]{beamer}
 % Keep the PDF metadata to title, author and subject.
 \pdfsuppressptexinfo=-1
@@ -71,7 +72,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
 % Footer: the UMass Boston word mark on the left, the event in the middle, the slide number.
 \setbeamertemplate{footline}{%
   \hspace*{15mm}\raisebox{-0.5mm}{\includegraphics[height=0.62cm]{Umass_boston_textlogo.png}}%
-  \hfill{\scriptsize\color{muted}Zhen Lu and Noctis Zhang, PEAAII AI Applications Hackathon 2026}%
+  \hfill{\scriptsize\color{muted}Zhen Lu, Noctis Zhang and Zhen Luo, PEAAII AI Applications Hackathon 2026}%
   \hfill{\scriptsize\color{muted}\insertframenumber{} / \inserttotalframenumber}\hspace*{15mm}%
   \par\vspace*{0.3cm}}
 
@@ -86,7 +87,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
 \newcommand{\choice}[1]{\tikz[baseline=(b.base)]\node[fill=white, draw=accent, line width=1pt, rounded corners=8pt, inner sep=4.5pt, text=ink, font=\normalsize\bfseries] (b) {#1};}
 
 \title[Roameo]{Roameo}
-\author[Zhen Lu and Noctis Zhang]{Zhen Lu and Noctis Zhang}
+\author[Zhen Lu, Noctis Zhang and Zhen Luo]{Zhen Lu, Noctis Zhang and Zhen Luo}
 \date{October 2026}
 
 \begin{document}
@@ -114,9 +115,10 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
        \makebox[1.15cm][l]{\textcolor{umb}{\markyou}}\textbf{You make the call.}\par\vspace{2mm}
        {\large\color{muted}An agent here is an AI helper with one job.}};
     % the authors and their department
-    \node[anchor=south west, inner sep=0pt, text width=13cm, align=flush left] at ([xshift=1.5cm, yshift=0.75cm]current page.south west)
-      {{\Large\bfseries Zhen Lu \quad Noctis Zhang\par}\vspace{1.2mm}
-       {\large Department of Computer Science, University of Massachusetts Boston\par}};
+    \node[anchor=south west, inner sep=0pt, text width=13cm, align=flush left] at ([xshift=1.5cm, yshift=0.4cm]current page.south west)
+      {{\Large\bfseries Zhen Lu\textsuperscript{1} \quad Noctis Zhang\textsuperscript{1} \quad Zhen Luo\textsuperscript{2}\par}\vspace{1.2mm}
+       {\large \textsuperscript{1}Department of Computer Science, University of Massachusetts Boston\par}\vspace{0.5mm}
+       {\large \textsuperscript{2}Department of Industrial Engineering, Northeastern University\par}};
     % two QR codes, try it and the code
     \node[anchor=north, inner sep=0pt] (q1) at ([xshift=-3.9cm, yshift=-2.55cm]current page.north east) {\qrcode[height=3.3cm]{https://roameo-l13h.onrender.com/}};
     \node[anchor=north, inner sep=0pt, font=\small, align=flush center] at ([yshift=-0.15cm]q1.south) {\textbf{Try it}\\roameo-l13h.onrender.com};
@@ -124,9 +126,10 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     \node[anchor=north, inner sep=0pt, font=\small, align=flush center] at ([yshift=-0.15cm]q2.south) {\textbf{Code}\\github.com/TinyZhen/Travel\_Agent};
   \end{tikzpicture}
   \note{
-    \textbf{(15 s, ends at 0 min 15 s)} Hi, we are Zhen Lu and Noctis Zhang, from computer
-    science at UMass Boston. This is Roameo, a trip planner. AI agents do the legwork, code
-    checks the money, and you make the call.
+    \textbf{(19 s, ends at 0 min 19 s)} Hi, we are Zhen Lu and Noctis Zhang, from computer
+    science at UMass Boston, with Zhen Luo from industrial engineering at Northeastern. This is
+    Roameo, a trip planner. AI agents do the legwork, code checks the money, and you make the
+    call.
   }
 \end{frame}
 }
@@ -174,7 +177,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
   \vspace{5mm}
   \figcaption{[2] Booking.com, Global AI Sentiment Report, July 2025. Alex is an illustration. The run on the next slides is real.}
   \note{
-    \textbf{(35 s, ends at 0 min 50 s)} Meet Alex, a student we made up for this talk. Alex has
+    \textbf{(35 s, ends at 0 min 54 s)} Meet Alex, a student we made up for this talk. Alex has
     six hundred dollars for four days in Chicago, and types one sentence. But flights, a hotel,
     sights, food and transit all have to add up, again after every change. A chat reply can do
     that sum itself and say it fits, with nobody checking. And in one survey, eighty nine
@@ -189,7 +192,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
   \centering
   \includegraphics[width=\textwidth]{fig_ideas.pdf}
   \note{
-    \textbf{(19 s, ends at 1 min 09 s)} Roameo rests on three simple ideas. AI agents do the
+    \textbf{(19 s, ends at 1 min 13 s)} Roameo rests on three simple ideas. AI agents do the
     legwork. Code checks the money. You make the call. An agent here is an AI helper with one
     job. Each idea has three parts, and we will follow Alex through all of them.
   }
@@ -230,7 +233,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
   \vspace{4mm}
   {\large\textbf{Why AI agents here?} Each step depends on what the last one found, so the AI chooses the next search. Searches the plan cannot do without are run even if the AI skipped them.\par}
   \note{
-    \textbf{(44 s, ends at 1 min 53 s)} Idea one, AI agents do the legwork. First, they ask for
+    \textbf{(44 s, ends at 1 min 57 s)} Idea one, AI agents do the legwork. First, they ask for
     what is missing. Alex never said where from or when, so Roameo asked. It never guesses a
     city or a date, because a guessed date gives a useless plan. Second, they choose which
     searches the trip needs. For Alex they compared eight flights, eighteen hotels and fifty
@@ -260,7 +263,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     \end{column}
   \end{columns}
   \note{
-    \textbf{(47 s, ends at 2 min 40 s)} Idea two, code checks the money. Plain code adds up
+    \textbf{(47 s, ends at 2 min 44 s)} Idea two, code checks the money. Plain code adds up
     every total. The flight and the hotel are live prices, and food and local transit are
     labelled estimates. Alex's first plan came to one thousand two hundred thirty five dollars.
     Then code tries one fix at a time, at most five. A cheaper hotel, the cheapest flight, no
@@ -304,7 +307,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
   \vspace{6mm}
   {\large\textbf{Why it never books.} Paying is a decision a person should make, on a site they trust. Saying OK only downloads a calendar file.\par}
   \note{
-    \textbf{(43 s, ends at 3 min 23 s)} After five fixes the plan costs seven hundred eighty
+    \textbf{(43 s, ends at 3 min 27 s)} After five fixes the plan costs seven hundred eighty
     dollars, still one hundred eighty over. This is the moment that matters. Roameo does not
     hide the gap, and it does not decide for Alex. It stops and asks. Raise the budget, shorten
     to two nights, or drive instead of flying? That is idea three, you make the call. Our tests
@@ -341,7 +344,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
   \vspace{4.5mm}
   {\large\textbf{Honest limits.} We wrote the tests ourselves, both modes used sample prices and weather, 3 runs is a small sample, and there was no user study. Only the AI understood ``first weekend of December''.\par}
   \note{
-    \textbf{(49 s, ends at 4 min 12 s)} Does it work? A test here is a conversation we wrote in
+    \textbf{(49 s, ends at 4 min 16 s)} Does it work? A test here is a conversation we wrote in
     advance, typed into Roameo, with code that checks the answer. For example, that it asks for
     a missing date. A test passes when every check comes out right. We ran them in demo mode,
     which is practice runs with sample prices, and three times with the AI, because the AI can
@@ -382,7 +385,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     \end{column}
   \end{columns}
   \note{
-    \textbf{(40 s, ends at 4 min 52 s)} Responsible use of AI follows the same three ideas. The
+    \textbf{(40 s, ends at 4 min 56 s)} Responsible use of AI follows the same three ideas. The
     AI asks before it guesses, and each helper has one narrow job. Code shows its math and
     labels estimates. And you decide, and book it yourself. What goes where? In AI mode, what
     you type goes to the AI model. The searches get the city, the dates and airport codes, not
@@ -416,7 +419,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
   \vspace{2mm}
   \figcaption{First group to reach, student clubs. We have not tested the others. This is what each says it is for. [3] Expedia Group, Spring 2024 product release. [4] Fast.io, a review of AI trip planners, 2026.}
   \note{
-    \textbf{(38 s, ends at 5 min 30 s)} Who else helps plan trips? Chat assistants can plan a
+    \textbf{(38 s, ends at 5 min 34 s)} Who else helps plan trips? Chat assistants can plan a
     trip in a chat window. Expedia's assistant, Romie, helps you plan, shop and book inside
     Expedia. Planner apps like Mindtrip, Layla and Wonderplan focus on ideas and day plans.
     People also use spreadsheets, group chats or a travel agency. We have not tested the others.
@@ -454,7 +457,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
   \vspace{3mm}
   \support{\textbf{Next}, a pilot with 5 to 10 students, to measure overspending and the time to a plan. \textbf{Our ask}, try it and tell us where it goes wrong.}
   \note{
-    \textbf{(33 s, ends at 6 min 03 s)} Anyone can try it free. Demo mode starts on a laptop in
+    \textbf{(33 s, ends at 6 min 07 s)} Anyone can try it free. Demo mode starts on a laptop in
     about three minutes, with sample prices for eight cities and no sign-ups. A club can share
     one link, and a group of four sees two rooms and the cost per person before anyone pays. A
     class can read the code to see an AI that asks before it spends. Next, a pilot with five to
@@ -485,7 +488,7 @@ t,11pt,notheorems,usepdftitle=false,hyperref={pdfauthor={Zhen Lu and Noctis Zhan
     \end{column}
   \end{columns}
   \note{
-    \textbf{(21 s, ends at 6 min 24 s)} So, three ideas. AI agents did the legwork for Alex.
+    \textbf{(21 s, ends at 6 min 28 s)} So, three ideas. AI agents did the legwork for Alex.
     Code checked the money and found the one hundred eighty dollar gap. And Alex made the call.
     Roameo treats your budget as a limit, not a wish. Thank you to the PEAAII organizers. Scan
     the code to try it.

@@ -1,6 +1,7 @@
 % Roameo, the one-slide poster (landscape, 48 by 27 in, exactly 16:9, so it projects as one slide
 % and prints as a flyer). Authors: Zhen Lu and Noctis Zhang, Department of Computer Science,
-% University of Massachusetts Boston.
+% University of Massachusetts Boston, and Zhen Luo, Department of Industrial Engineering,
+% Northeastern University.
 % Built on the Gemini beamerposter theme by Anish Athalye (github.com/anishathalye/gemini, MIT
 % License, see LICENSE-gemini.md) with the UMass Boston colours (beamercolorthemeumb.sty). Every
 % decorative rule and block separator of the theme is switched off below.
@@ -13,7 +14,7 @@
 % (docs/screenshots/03_over_budget_escalation.png, cropped by ../tools/crop_screenshots.py),
 % docs/evaluation_results.md and docs/evaluation_results_llm.md, README.md and backend/.
 
-\documentclass[final,usepdftitle=false,hyperref={pdfauthor={Zhen Lu, Noctis Zhang},pdftitle={Roameo plans your trip and lets you decide on the money}}]{beamer}
+\documentclass[final,usepdftitle=false,hyperref={pdfauthor={Zhen Lu, Noctis Zhang, Zhen Luo},pdftitle={Roameo plans your trip and lets you decide on the money}}]{beamer}
 \pdfvariable suppressoptionalinfo 1023
 \hypersetup{pdfcreator={},pdfproducer={}}
 
@@ -89,8 +90,8 @@
   {\fontsize{100}{106}\selectfont\bfseries Roameo}{\fontsize{58}{64}\selectfont\ plans your trip and lets you decide on the money}\\[0.1in]
   {\fontsize{46}{54}\selectfont\bfseries \markagents\hspace{0.3em}AI agents do the legwork.\hspace{1em}\markcode\hspace{0.3em}Code checks the money.\hspace{1em}\markyou\hspace{0.3em}You make the call.}\\[0.08in]
   {\fontsize{30}{36}\selectfont An agent here is an AI helper with one job.}\\[0.16in]
-  {\fontsize{33}{40}\selectfont\bfseries Zhen Lu and Noctis Zhang}\\[0.02in]
-  {\fontsize{28}{34}\selectfont Department of Computer Science, University of Massachusetts Boston}};
+  {\fontsize{33}{40}\selectfont\bfseries Zhen Lu\textsuperscript{1}, Noctis Zhang\textsuperscript{1} and Zhen Luo\textsuperscript{2}}\\[0.02in]
+  {\fontsize{28}{34}\selectfont \textsuperscript{1}Department of Computer Science, University of Massachusetts Boston\hspace{1.2em}\textsuperscript{2}Department of Industrial Engineering, Northeastern University}};
 \node[anchor=north east, inner sep=0pt, text=white, align=right, font=\fontsize{27}{32}\selectfont] at \at{47.3}{0.32} {PEAAII AI Applications\\Hackathon 2026, Agentic AI};
 \node[anchor=north east, fill=white, inner sep=0.1in] (qrcode) at \at{47.3}{1.42} {\qrcode[height=2.0in]{https://github.com/TinyZhen/Travel_Agent}};
 \node[anchor=north east, fill=white, inner sep=0.1in] (qrtry) at \at{44.75}{1.42} {\qrcode[height=2.0in]{https://roameo-l13h.onrender.com/}};
