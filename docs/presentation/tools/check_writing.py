@@ -17,7 +17,8 @@ What is read
            style (command lines and file paths are code, not prose) and without hyperlink
            targets and field codes
   notes    the \\note{...} blocks of slides/slides.tex
-  scripts  slides/pres-note.md, poster/poster-note.md and this directory's README.md, without
+  scripts  slides/pres-note.md, slides/stage-notes-zhen.md, poster/poster-note.md and this
+           directory's README.md, without
            fenced code, inline code, Markdown link targets and table rule lines
 Words inside the app's screenshots are product interface, not our writing, and are not checked.
 The working documents STORY_PLAN.md, AUDIT_BEFORE.md and REVISION_PLAN.md quote old wording on
@@ -42,9 +43,9 @@ HERE = Path(__file__).resolve().parent.parent  # docs/presentation
 PDFS = ["slides/slides.pdf", "poster/poster.pdf"]
 DOCX = ["../Roameo_Project_Report.docx"]
 TEX_NOTES = ["slides/slides.tex"]
-SCRIPTS = ["slides/pres-note.md", "poster/poster-note.md", "README.md"]
+SCRIPTS = ["slides/pres-note.md", "slides/stage-notes-zhen.md", "poster/poster-note.md", "README.md"]
 LEGACY = ["STORY_PLAN.md"]  # dashes and semicolons only
-TALK = {"slides/slides.pdf", "poster/poster.pdf", "slides/slides.tex", "slides/pres-note.md", "poster/poster-note.md"}
+TALK = {"slides/slides.pdf", "poster/poster.pdf", "slides/slides.tex", "slides/pres-note.md", "slides/stage-notes-zhen.md", "poster/poster-note.md"}
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 MONO = re.compile(r"consolas|courier|menlo|monaco|mono", re.I)
